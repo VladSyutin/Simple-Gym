@@ -6,6 +6,7 @@ enum ColorTokens {
     static let labelPrimary = Color(uiColor: .label)
     static let labelSecondary = Color(uiColor: .secondaryLabel)
     static let labelTertiary = Color(uiColor: .tertiaryLabel)
+    static let vibrantControlPrimary = Color(red: 64 / 255, green: 64 / 255, blue: 64 / 255)
     static let separator = Color(uiColor: .separator)
     static let white = Color.white
 }

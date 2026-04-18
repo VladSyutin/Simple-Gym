@@ -31,7 +31,11 @@ struct HomeScreen: View {
         .background(ColorTokens.backgroundPrimary.ignoresSafeArea())
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
-                PrimaryLiquidGlassButton(title: "Добавить тренировку") {}
+                LiquidGlassButton(
+                    title: "Добавить тренировку",
+                    systemImage: "plus",
+                    variant: .tinted
+                ) {}
                     .padding(.horizontal, Spacing.xLarge)
                     .padding(.top, Spacing.large)
                     .padding(.bottom, Spacing.xxSmall)
