@@ -12,4 +12,7 @@ enum MaterialTokens {
                 .interactive(true)
         }
     }
+
+    static let symbolButtonGlass = Glass.regular
+        .interactive(true)
 }

@@ -4,7 +4,9 @@ enum Typography {
     case title2Emphasized
     case title3Regular
     case bodyEmphasized
+    case bodyRegular
     case buttonLabel
+    case symbolButtonLabel
     case captionSemibold
     case dayNumber
     case selectedDayNumber
@@ -17,8 +19,12 @@ enum Typography {
             return .system(size: 20, weight: .regular)
         case .bodyEmphasized:
             return .system(size: 17, weight: .semibold)
+        case .bodyRegular:
+            return .system(size: 17, weight: .regular)
         case .buttonLabel:
             return .system(size: 17, weight: .medium)
+        case .symbolButtonLabel:
+            return .system(size: 19, weight: .semibold)
         case .captionSemibold:
             return .system(size: 13, weight: .semibold)
         case .dayNumber:
@@ -36,7 +42,11 @@ enum Typography {
             return -0.45
         case .bodyEmphasized:
             return -0.43
+        case .bodyRegular:
+            return -0.43
         case .buttonLabel:
+            return 0
+        case .symbolButtonLabel:
             return 0
         case .captionSemibold:
             return 0

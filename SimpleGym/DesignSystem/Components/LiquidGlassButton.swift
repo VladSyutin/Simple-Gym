@@ -50,6 +50,41 @@ struct LiquidGlassButton: View {
     }
 }
 
+struct LiquidGlassSymbolLabel: View {
+    let systemImage: String
+
+    private enum Metrics {
+        static let controlSize: CGFloat = 48
+    }
+
+    var body: some View {
+        Image(systemName: systemImage)
+            .font(Typography.symbolButtonLabel.font)
+            .foregroundStyle(ColorTokens.vibrantControlPrimary)
+            .frame(width: Metrics.controlSize, height: Metrics.controlSize)
+            .contentShape(Circle())
+            .glassEffect(MaterialTokens.symbolButtonGlass, in: Circle())
+    }
+}
+
+struct LiquidGlassSymbolButton: View {
+    let systemImage: String
+    var accessibilityLabel: LocalizedStringKey
+    var isEnabled: Bool = true
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            LiquidGlassSymbolLabel(systemImage: systemImage)
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.55)
+        .accessibilityLabel(Text(accessibilityLabel))
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
 #Preview("Variants") {
     ZStack {
         ColorTokens.backgroundPrimary.ignoresSafeArea()
@@ -75,5 +110,16 @@ struct LiquidGlassButton: View {
             variant: .tinted
         ) {}
         .padding(.horizontal, 32)
+    }
+}
+
+#Preview("Symbol") {
+    ZStack {
+        ColorTokens.backgroundPrimary.ignoresSafeArea()
+
+        LiquidGlassSymbolButton(
+            systemImage: "ellipsis",
+            accessibilityLabel: "Дополнительные действия"
+        ) {}
     }
 }

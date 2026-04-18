@@ -2,6 +2,7 @@ import SwiftUI
 
 enum ColorTokens {
     static let accentBlue = Color(red: 0 / 255, green: 136 / 255, blue: 255 / 255)
+    static let accentBlueSoft = Color(red: 214 / 255, green: 236 / 255, blue: 255 / 255)
     static let backgroundPrimary = Color(uiColor: .systemBackground)
     static let labelPrimary = Color(uiColor: .label)
     static let labelSecondary = Color(uiColor: .secondaryLabel)
