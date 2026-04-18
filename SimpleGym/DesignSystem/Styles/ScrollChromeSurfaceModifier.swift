@@ -1,17 +1,23 @@
 import SwiftUI
 
+private struct ScrollChromeSurfaceBackground: View {
+    var body: some View {
+        ZStack {
+            ColorTokens.backgroundPrimary
+
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .opacity(0.35)
+        }
+    }
+}
+
 struct ScrollChromeSurfaceModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background {
-                ZStack {
-                    ColorTokens.backgroundPrimary
-
-                    Rectangle()
-                        .fill(.ultraThinMaterial)
-                        .opacity(0.9)
-                        .blendMode(.multiply)
-                }
+                ScrollChromeSurfaceBackground()
+                    .ignoresSafeArea(edges: .top)
             }
             .overlay(alignment: .bottom) {
                 Rectangle()

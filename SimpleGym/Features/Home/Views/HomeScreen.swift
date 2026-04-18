@@ -7,6 +7,14 @@ private let simpleGymCalendar: Calendar = {
     return calendar
 }()
 
+private func performWithoutAnimation(_ updates: () -> Void) {
+    var transaction = Transaction(animation: nil)
+    transaction.disablesAnimations = true
+    withTransaction(transaction) {
+        updates()
+    }
+}
+
 struct HomeScreen: View {
     @State private var isCalendarExpanded = false
     @State private var userSelectedDate: Date?
@@ -124,15 +132,19 @@ struct HomeScreen: View {
 
     private func setSelectedDate(_ date: Date, currentDate: Date) {
         let normalizedDate = simpleGymCalendar.startOfDay(for: date)
-        userSelectedDate = simpleGymCalendar.isDate(normalizedDate, inSameDayAs: currentDate) ? nil : normalizedDate
-        visibleMonthPageID = simpleGymCalendar.startOfMonth(for: normalizedDate)
-        visibleWeekPageID = simpleGymCalendar.startOfWeek(for: normalizedDate)
+        performWithoutAnimation {
+            userSelectedDate = simpleGymCalendar.isDate(normalizedDate, inSameDayAs: currentDate) ? nil : normalizedDate
+            visibleMonthPageID = simpleGymCalendar.startOfMonth(for: normalizedDate)
+            visibleWeekPageID = simpleGymCalendar.startOfWeek(for: normalizedDate)
+        }
     }
 
     private func jumpToToday(currentDate: Date) {
-        userSelectedDate = nil
-        visibleMonthPageID = simpleGymCalendar.startOfMonth(for: currentDate)
-        visibleWeekPageID = simpleGymCalendar.startOfWeek(for: currentDate)
+        performWithoutAnimation {
+            userSelectedDate = nil
+            visibleMonthPageID = simpleGymCalendar.startOfMonth(for: currentDate)
+            visibleWeekPageID = simpleGymCalendar.startOfWeek(for: currentDate)
+        }
     }
 
     private func syncSelectionForVisibleMonth(_ monthStart: Date, currentDate: Date) {
@@ -145,8 +157,9 @@ struct HomeScreen: View {
             return
         }
 
-        let preferredDay = simpleGymCalendar.component(.day, from: selectedDate)
-        let updatedSelection = simpleGymCalendar.date(inMonth: normalizedMonthStart, preferredDay: preferredDay)
+        let updatedSelection = simpleGymCalendar.isDate(normalizedMonthStart, equalTo: currentDate, toGranularity: .month)
+            ? currentDate
+            : normalizedMonthStart
         setSelectedDate(updatedSelection, currentDate: currentDate)
     }
 
@@ -173,6 +186,10 @@ struct HomeScreen: View {
 private struct HomeCalendar: View {
     @Binding var visibleMonthPageID: Date?
     @Binding var visibleWeekPageID: Date?
+
+    @State private var monthScrollStartOffsetY: CGFloat?
+    @State private var monthScrollStartPageID: Date?
+    @State private var monthScrollPeakDeltaY: CGFloat = 0
 
     let currentDate: Date
     let selectedDate: Date
@@ -221,7 +238,7 @@ private struct HomeCalendar: View {
     var body: some View {
         GeometryReader { geometry in
             let metrics = CalendarLayoutMetrics(width: geometry.size.width)
-            let expandedWeeksHeight = metrics.monthGridHeight(weekCount: calendar.weeksInMonth(containing: displayedMonthStart))
+            let expandedWeeksHeight = metrics.monthGridHeight(weekCount: CalendarLayoutMetrics.expandedMonthWeekCount)
             let visibleWeeksHeight = isExpanded ? expandedWeeksHeight : metrics.weekHeight
 
             VStack(spacing: 0) {
@@ -245,7 +262,6 @@ private struct HomeCalendar: View {
             .scrollChromeSurface()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .animation(.spring(response: 0.32, dampingFraction: 0.9), value: isExpanded)
-            .animation(.spring(response: 0.32, dampingFraction: 0.9), value: displayedMonthStart)
         }
         .frame(height: totalHeight)
     }
@@ -253,7 +269,7 @@ private struct HomeCalendar: View {
     private var totalHeight: CGFloat {
         let metrics = CalendarLayoutMetrics(width: 0)
         let weeksHeight = isExpanded
-            ? metrics.monthGridHeight(weekCount: calendar.weeksInMonth(containing: displayedMonthStart))
+            ? metrics.monthGridHeight(weekCount: CalendarLayoutMetrics.expandedMonthWeekCount)
             : metrics.weekHeight
         return metrics.monthRowHeight + metrics.weekdayRowHeight + weeksHeight + metrics.sectionHeaderHeight
     }
@@ -309,7 +325,6 @@ private struct HomeCalendar: View {
                 ForEach(weekPageAnchors, id: \.self) { weekStart in
                     weekRow(
                         days: calendar.daysInWeek(startingAt: weekStart),
-                        referenceMonth: displayedMonthStart,
                         metrics: metrics
                     )
                         .frame(width: metrics.width)
@@ -321,6 +336,7 @@ private struct HomeCalendar: View {
         .scrollClipDisabled()
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $visibleWeekPageID)
+        .disableScrollsToTop()
     }
 
     @ViewBuilder
@@ -330,32 +346,64 @@ private struct HomeCalendar: View {
                 ForEach(monthPageAnchors, id: \.self) { monthStart in
                     monthGrid(monthStart: monthStart, metrics: metrics)
                         .frame(width: metrics.width)
+                        .frame(height: metrics.monthGridHeight(weekCount: CalendarLayoutMetrics.expandedMonthWeekCount), alignment: .top)
                         .id(monthStart)
                 }
             }
             .scrollTargetLayout()
         }
         .scrollClipDisabled()
-        .scrollTargetBehavior(.viewAligned)
-        .scrollPosition(id: $visibleMonthPageID)
+        .scrollTargetBehavior(.viewAligned(limitBehavior: .alwaysByOne, anchor: .top))
+        .scrollPosition(id: $visibleMonthPageID, anchor: .top)
+        .disableScrollsToTop()
+        .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }) { _, newOffsetY in
+            updateMonthScrollPeak(with: newOffsetY)
+        }
+        .onScrollPhaseChange(handleMonthScrollPhaseChange(_:_:_:))
     }
 
     @ViewBuilder
     private func monthGrid(monthStart: Date, metrics: CalendarLayoutMetrics) -> some View {
         VStack(spacing: metrics.weekSpacing) {
-            ForEach(calendar.monthWeeks(containing: monthStart), id: \.self) { week in
-                weekRow(days: week, referenceMonth: monthStart, metrics: metrics)
+            ForEach(Array(calendar.monthWeeks(containing: monthStart).enumerated()), id: \.offset) { _, week in
+                monthWeekRow(days: week, metrics: metrics)
             }
         }
     }
 
     @ViewBuilder
-    private func weekRow(days: [CalendarDay], referenceMonth: Date, metrics: CalendarLayoutMetrics) -> some View {
+    private func monthWeekRow(days: [CalendarDay?], metrics: CalendarLayoutMetrics) -> some View {
+        HStack(spacing: metrics.daySpacing) {
+            ForEach(Array(days.enumerated()), id: \.offset) { _, day in
+                Group {
+                    if let day {
+                        HomeCalendarDayCell(
+                            day: day,
+                            style: dayStyle(for: day),
+                            showsTraining: day.containsTraining(in: trainingDates, calendar: calendar),
+                            onTap: {
+                                onDateTap(day.date)
+                            }
+                        )
+                    } else {
+                        Color.clear
+                            .accessibilityHidden(true)
+                    }
+                }
+                .frame(width: metrics.daySize, height: metrics.weekHeight)
+            }
+        }
+        .padding(.horizontal, metrics.horizontalInset)
+        .frame(height: metrics.weekHeight)
+    }
+
+    @ViewBuilder
+    private func weekRow(days: [CalendarDay], metrics: CalendarLayoutMetrics) -> some View {
         HStack(spacing: metrics.daySpacing) {
             ForEach(days) { day in
                 HomeCalendarDayCell(
                     day: day,
-                    style: dayStyle(for: day, referenceMonth: referenceMonth),
+                    style: dayStyle(for: day),
                     showsTraining: day.containsTraining(in: trainingDates, calendar: calendar),
                     onTap: {
                         onDateTap(day.date)
@@ -368,7 +416,7 @@ private struct HomeCalendar: View {
         .frame(height: metrics.weekHeight)
     }
 
-    private func dayStyle(for day: CalendarDay, referenceMonth: Date) -> HomeCalendarDayStyle {
+    private func dayStyle(for day: CalendarDay) -> HomeCalendarDayStyle {
         if calendar.isDate(day.date, inSameDayAs: currentDate) && calendar.isDate(day.date, inSameDayAs: selectedDate) {
             return .todaySelected
         }
@@ -381,7 +429,78 @@ private struct HomeCalendar: View {
             return .today
         }
 
-        return day.isCurrentMonth(referenceMonth: referenceMonth, calendar: calendar) ? .current : .anotherMonth
+        return .current
+    }
+
+    private func handleMonthScrollPhaseChange(_ oldPhase: ScrollPhase, _ newPhase: ScrollPhase, _ context: ScrollPhaseChangeContext) {
+        guard isExpanded else {
+            resetMonthScrollTracking()
+            return
+        }
+
+        if newPhase == .tracking || newPhase == .interacting {
+            if monthScrollStartOffsetY == nil {
+                monthScrollStartOffsetY = context.geometry.contentOffset.y
+                monthScrollStartPageID = normalizedMonthPageID(visibleMonthPageID) ?? displayedMonthStart
+                monthScrollPeakDeltaY = 0
+            }
+            return
+        }
+
+        guard newPhase == .idle else {
+            return
+        }
+
+        defer {
+            resetMonthScrollTracking()
+        }
+
+        guard let startPageID = monthScrollStartPageID else {
+            return
+        }
+
+        let scrollDelta = monthScrollPeakDeltaY
+        guard abs(scrollDelta) >= CalendarLayoutMetrics.minimalMonthChangeScrollDistance else {
+            return
+        }
+
+        let settledPageID = normalizedMonthPageID(visibleMonthPageID) ?? displayedMonthStart
+        guard calendar.isDate(settledPageID, equalTo: startPageID, toGranularity: .month) else {
+            return
+        }
+
+        let monthStep = scrollDelta > 0 ? 1 : -1
+        guard let nextMonth = calendar.date(byAdding: .month, value: monthStep, to: startPageID) else {
+            return
+        }
+
+        performWithoutAnimation {
+            visibleMonthPageID = calendar.startOfMonth(for: nextMonth)
+        }
+    }
+
+    private func updateMonthScrollPeak(with offsetY: CGFloat) {
+        guard
+            isExpanded,
+            let startOffsetY = monthScrollStartOffsetY
+        else {
+            return
+        }
+
+        let delta = offsetY - startOffsetY
+        if abs(delta) > abs(monthScrollPeakDeltaY) {
+            monthScrollPeakDeltaY = delta
+        }
+    }
+
+    private func resetMonthScrollTracking() {
+        monthScrollStartOffsetY = nil
+        monthScrollStartPageID = nil
+        monthScrollPeakDeltaY = 0
+    }
+
+    private func normalizedMonthPageID(_ pageID: Date?) -> Date? {
+        pageID.map(calendar.startOfMonth(for:))
     }
 }
 
@@ -469,10 +588,6 @@ private struct CalendarDay: Identifiable, Hashable {
         )
     }
 
-    func isCurrentMonth(referenceMonth: Date, calendar: Calendar) -> Bool {
-        calendar.isDate(date, equalTo: referenceMonth, toGranularity: .month)
-    }
-
     func containsTraining(in trainingDates: Set<Date>, calendar: Calendar) -> Bool {
         trainingDates.contains(where: { trainingDate in
             calendar.isDate(trainingDate, inSameDayAs: date)
@@ -485,13 +600,12 @@ private enum HomeCalendarDayStyle {
     case today
     case selected
     case todaySelected
-    case anotherMonth
 
     var typography: Typography {
         switch self {
         case .selected, .todaySelected:
             return .selectedDayNumber
-        case .current, .today, .anotherMonth:
+        case .current, .today:
             return .dayNumber
         }
     }
@@ -504,8 +618,6 @@ private enum HomeCalendarDayStyle {
             return ColorTokens.accentBlue
         case .todaySelected:
             return ColorTokens.white
-        case .anotherMonth:
-            return ColorTokens.labelSecondary
         }
     }
 
@@ -515,7 +627,7 @@ private enum HomeCalendarDayStyle {
             return ColorTokens.accentBlueSoft
         case .todaySelected:
             return ColorTokens.accentBlue
-        case .current, .today, .anotherMonth:
+        case .current, .today:
             return nil
         }
     }
@@ -528,13 +640,14 @@ private enum HomeCalendarDayStyle {
             return ColorTokens.accentBlue
         case .todaySelected:
             return ColorTokens.white
-        case .anotherMonth:
-            return ColorTokens.labelSecondary
         }
     }
 }
 
 private struct CalendarLayoutMetrics {
+    static let minimalMonthChangeScrollDistance: CGFloat = 8
+    static let expandedMonthWeekCount: Int = 6
+
     let width: CGFloat
 
     let horizontalInset: CGFloat = 16
@@ -556,6 +669,37 @@ private struct CalendarLayoutMetrics {
     }
 }
 
+private struct ScrollViewConfigurationView: UIViewRepresentable {
+    let configure: (UIScrollView) -> Void
+
+    func makeUIView(context: Context) -> UIView {
+        UIView(frame: .zero)
+    }
+
+    func updateUIView(_ view: UIView, context: Context) {
+        DispatchQueue.main.async {
+            guard let scrollView = sequence(first: view.superview, next: { $0?.superview })
+                .first(where: { $0 is UIScrollView }) as? UIScrollView
+            else {
+                return
+            }
+
+            configure(scrollView)
+        }
+    }
+}
+
+private extension View {
+    func disableScrollsToTop() -> some View {
+        background {
+            ScrollViewConfigurationView { scrollView in
+                scrollView.scrollsToTop = false
+            }
+            .frame(width: 0, height: 0)
+        }
+    }
+}
+
 private extension Calendar {
     func startOfWeek(for date: Date) -> Date {
         dateInterval(of: .weekOfYear, for: startOfDay(for: date))?.start ?? startOfDay(for: date)
@@ -569,20 +713,13 @@ private extension Calendar {
         dateComponents([.day], from: startOfWeek(for: date), to: startOfDay(for: date)).day ?? 0
     }
 
-    func date(inMonth monthStart: Date, preferredDay: Int) -> Date {
-        let range = range(of: .day, in: .month, for: monthStart) ?? 1 ..< 2
-        let clampedDay = min(max(preferredDay, range.lowerBound), range.upperBound - 1)
-        let components = dateComponents([.year, .month], from: monthStart)
-        return date(from: DateComponents(year: components.year, month: components.month, day: clampedDay)) ?? monthStart
-    }
-
     func daysInWeek(startingAt weekStart: Date) -> [CalendarDay] {
         (0 ..< 7).compactMap { offset in
             date(byAdding: .day, value: offset, to: weekStart).map { CalendarDay(date: $0) }
         }
     }
 
-    func monthWeeks(containing monthStart: Date) -> [[CalendarDay]] {
+    func monthWeeks(containing monthStart: Date) -> [[CalendarDay?]] {
         guard
             let monthInterval = dateInterval(of: .month, for: monthStart),
             let firstWeekInterval = dateInterval(of: .weekOfMonth, for: monthInterval.start),
@@ -592,11 +729,15 @@ private extension Calendar {
             return []
         }
 
-        var days: [CalendarDay] = []
+        var days: [CalendarDay?] = []
         var currentDay = firstWeekInterval.start
 
         while currentDay < lastWeekInterval.end {
-            days.append(CalendarDay(date: currentDay))
+            if isDate(currentDay, equalTo: monthStart, toGranularity: .month) {
+                days.append(CalendarDay(date: currentDay))
+            } else {
+                days.append(nil)
+            }
             guard let nextDay = date(byAdding: .day, value: 1, to: currentDay) else {
                 break
             }
