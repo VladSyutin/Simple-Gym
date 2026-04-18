@@ -13,7 +13,6 @@
 		50B5ACFDBC97418BE7886ECB /* SimpleGymRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF9A42A06926DAD360DD06DE /* SimpleGymRootView.swift */; };
 		6CE8A848B5348110452AAD2E /* ColorTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF2248D053C3C83896DF6A1 /* ColorTokens.swift */; };
 		7B909A7EA81665D3A2794E10 /* Radius.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AA2DACC4E77C9EC95B14635 /* Radius.swift */; };
-		8A8A0E6D910D36940C389B44 /* LiquidGlassButtonTestingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFFD7E35302179B988DFCDB2 /* LiquidGlassButtonTestingScreen.swift */; };
 		9C1360A0F71E1119EF7920AD /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 939536601713B21A62DED900 /* EmptyStateView.swift */; };
 		C34F59A4BD2AE90AB0C435B5 /* TextStyleModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C9EC35B9940D082040E129B /* TextStyleModifier.swift */; };
 		C6C8D675155D641A5A30E49F /* SimpleGymApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB822A65C3FD2502312EDF0C /* SimpleGymApp.swift */; };
@@ -31,12 +30,11 @@
 		939536601713B21A62DED900 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		9C9EC35B9940D082040E129B /* TextStyleModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextStyleModifier.swift; sourceTree = "<group>"; };
 		AFE054EA6C902305A88C5333 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
-		B4C2AA60ADADC98402B39FB3 /* SimpleGym.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimpleGym.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B4C2AA60ADADC98402B39FB3 /* SimpleGym.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SimpleGym.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BFF2248D053C3C83896DF6A1 /* ColorTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTokens.swift; sourceTree = "<group>"; };
 		D919FB5F14344D5FDD6CE336 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DAAF498DE471659F8593B28E /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		DB822A65C3FD2502312EDF0C /* SimpleGymApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymApp.swift; sourceTree = "<group>"; };
-		DFFD7E35302179B988DFCDB2 /* LiquidGlassButtonTestingScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassButtonTestingScreen.swift; sourceTree = "<group>"; };
 		F8D49C63EA483A20A87B9B39 /* LiquidGlassButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassButton.swift; sourceTree = "<group>"; };
 		FF9A42A06926DAD360DD06DE /* SimpleGymRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymRootView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -54,17 +52,8 @@
 		174DE9816168F73DD96CE6C8 /* Playground */ = {
 			isa = PBXGroup;
 			children = (
-				1DE5B45D34F54B2F807B244C /* Views */,
 			);
 			path = Playground;
-			sourceTree = "<group>";
-		};
-		1DE5B45D34F54B2F807B244C /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				DFFD7E35302179B988DFCDB2 /* LiquidGlassButtonTestingScreen.swift */,
-			);
-			path = Views;
 			sourceTree = "<group>";
 		};
 		2439B87983ABC73A7D592A85 /* Root */ = {
@@ -195,7 +184,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2640;
+				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					5386AC8C7C554F18B54846DE = {
 						DevelopmentTeam = "";
@@ -242,7 +231,6 @@
 				9C1360A0F71E1119EF7920AD /* EmptyStateView.swift in Sources */,
 				42E0DFF960036FD38677DF47 /* HomeScreen.swift in Sources */,
 				C808CC219A1C14AF9B9970B5 /* LiquidGlassButton.swift in Sources */,
-				8A8A0E6D910D36940C389B44 /* LiquidGlassButtonTestingScreen.swift in Sources */,
 				D2BB53ED086DCDE9F57B0C87 /* MaterialTokens.swift in Sources */,
 				7B909A7EA81665D3A2794E10 /* Radius.swift in Sources */,
 				0CE71AADA55DE730C9428EB9 /* ScrollChromeSurfaceModifier.swift in Sources */,
@@ -294,7 +282,6 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -307,7 +294,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 6.0;
@@ -351,7 +337,6 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -371,7 +356,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
@@ -398,9 +382,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.simplegym.app;
 				PRODUCT_NAME = SimpleGym;
 				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
@@ -425,9 +407,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.simplegym.app;
 				PRODUCT_NAME = SimpleGym;
 				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;

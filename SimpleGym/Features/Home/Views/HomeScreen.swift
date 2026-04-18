@@ -22,7 +22,7 @@ struct HomeScreen: View {
             EmptyStateView(
                 iconSystemName: "dumbbell.fill",
                 title: "Нет тренировок",
-                message: "Добавьте упражнение\nили программу."
+                message: "Добавьте упражнение или программу."
             )
             .padding(.horizontal, Spacing.large)
 
