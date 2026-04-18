@@ -1,0 +1,29 @@
+name: SimpleGym
+options:
+  minimumXcodeGenVersion: 2.45.0
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: 6.0
+targets:
+  SimpleGym:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: SimpleGym
+        excludes:
+          - Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.simplegym.app
+        PRODUCT_NAME: SimpleGym
+        TARGETED_DEVICE_FAMILY: 1
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: SimpleGym/Info.plist
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 1.0
+        CODE_SIGN_STYLE: Automatic
+        SUPPORTS_MACCATALYST: NO
+        DEVELOPMENT_TEAM: ""

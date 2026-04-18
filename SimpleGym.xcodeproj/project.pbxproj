@@ -1,0 +1,431 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0CE71AADA55DE730C9428EB9 /* ScrollChromeSurfaceModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F3AE00F372059660317E17 /* ScrollChromeSurfaceModifier.swift */; };
+		299873677E9E863ECD6DD9F7 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE054EA6C902305A88C5333 /* Spacing.swift */; };
+		42E0DFF960036FD38677DF47 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAF498DE471659F8593B28E /* HomeScreen.swift */; };
+		50B5ACFDBC97418BE7886ECB /* SimpleGymRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF9A42A06926DAD360DD06DE /* SimpleGymRootView.swift */; };
+		6CE8A848B5348110452AAD2E /* ColorTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF2248D053C3C83896DF6A1 /* ColorTokens.swift */; };
+		7B909A7EA81665D3A2794E10 /* Radius.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AA2DACC4E77C9EC95B14635 /* Radius.swift */; };
+		9C1360A0F71E1119EF7920AD /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 939536601713B21A62DED900 /* EmptyStateView.swift */; };
+		C34F59A4BD2AE90AB0C435B5 /* TextStyleModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C9EC35B9940D082040E129B /* TextStyleModifier.swift */; };
+		C6C8D675155D641A5A30E49F /* SimpleGymApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB822A65C3FD2502312EDF0C /* SimpleGymApp.swift */; };
+		C9315D6D70E7909B4ABAA9D0 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37FF7E8E9975F6A6A0303D15 /* Typography.swift */; };
+		CCA1E12BE7210DCD8F6696E1 /* PrimaryLiquidGlassButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C06AC589737DF793D3CF208 /* PrimaryLiquidGlassButton.swift */; };
+		CEE9564B17CF82252B4D469D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D919FB5F14344D5FDD6CE336 /* Assets.xcassets */; };
+		D2BB53ED086DCDE9F57B0C87 /* MaterialTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11823809A397DCC29A53F7F3 /* MaterialTokens.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		11823809A397DCC29A53F7F3 /* MaterialTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialTokens.swift; sourceTree = "<group>"; };
+		1C06AC589737DF793D3CF208 /* PrimaryLiquidGlassButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryLiquidGlassButton.swift; sourceTree = "<group>"; };
+		37FF7E8E9975F6A6A0303D15 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
+		5AA2DACC4E77C9EC95B14635 /* Radius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radius.swift; sourceTree = "<group>"; };
+		72F3AE00F372059660317E17 /* ScrollChromeSurfaceModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollChromeSurfaceModifier.swift; sourceTree = "<group>"; };
+		939536601713B21A62DED900 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		9C9EC35B9940D082040E129B /* TextStyleModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextStyleModifier.swift; sourceTree = "<group>"; };
+		AFE054EA6C902305A88C5333 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
+		B4C2AA60ADADC98402B39FB3 /* SimpleGym.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SimpleGym.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BFF2248D053C3C83896DF6A1 /* ColorTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTokens.swift; sourceTree = "<group>"; };
+		D919FB5F14344D5FDD6CE336 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		DAAF498DE471659F8593B28E /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
+		DB822A65C3FD2502312EDF0C /* SimpleGymApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymApp.swift; sourceTree = "<group>"; };
+		FF9A42A06926DAD360DD06DE /* SimpleGymRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymRootView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		021D6BEE3098DC3E8AFFB94C /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				6209E3516FA2681FF1ABED26 /* Home */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		2439B87983ABC73A7D592A85 /* Root */ = {
+			isa = PBXGroup;
+			children = (
+				FF9A42A06926DAD360DD06DE /* SimpleGymRootView.swift */,
+			);
+			path = Root;
+			sourceTree = "<group>";
+		};
+		25962576CD148E01EF8793EE /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				DAAF498DE471659F8593B28E /* HomeScreen.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		4611444388A24F4782A0A759 /* Styles */ = {
+			isa = PBXGroup;
+			children = (
+				72F3AE00F372059660317E17 /* ScrollChromeSurfaceModifier.swift */,
+				9C9EC35B9940D082040E129B /* TextStyleModifier.swift */,
+			);
+			path = Styles;
+			sourceTree = "<group>";
+		};
+		5E2BD76FB0CB7FABA9BAE9AE /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				939536601713B21A62DED900 /* EmptyStateView.swift */,
+				1C06AC589737DF793D3CF208 /* PrimaryLiquidGlassButton.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		6209E3516FA2681FF1ABED26 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				25962576CD148E01EF8793EE /* Views */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		7C20F1C8E3AF7B07E1E979BC = {
+			isa = PBXGroup;
+			children = (
+				B401B36B18840F034FD1F05F /* SimpleGym */,
+				C2D0E5A236271BDBC4CC2336 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		89B1359ECBCD74834DB00968 /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				5E2BD76FB0CB7FABA9BAE9AE /* Components */,
+				4611444388A24F4782A0A759 /* Styles */,
+				8E86A8333C58CE489188321E /* Tokens */,
+			);
+			path = DesignSystem;
+			sourceTree = "<group>";
+		};
+		8E86A8333C58CE489188321E /* Tokens */ = {
+			isa = PBXGroup;
+			children = (
+				BFF2248D053C3C83896DF6A1 /* ColorTokens.swift */,
+				11823809A397DCC29A53F7F3 /* MaterialTokens.swift */,
+				5AA2DACC4E77C9EC95B14635 /* Radius.swift */,
+				AFE054EA6C902305A88C5333 /* Spacing.swift */,
+				37FF7E8E9975F6A6A0303D15 /* Typography.swift */,
+			);
+			path = Tokens;
+			sourceTree = "<group>";
+		};
+		B401B36B18840F034FD1F05F /* SimpleGym */ = {
+			isa = PBXGroup;
+			children = (
+				D919FB5F14344D5FDD6CE336 /* Assets.xcassets */,
+				EFF2789693E857A525F99050 /* App */,
+				89B1359ECBCD74834DB00968 /* DesignSystem */,
+				021D6BEE3098DC3E8AFFB94C /* Features */,
+			);
+			path = SimpleGym;
+			sourceTree = "<group>";
+		};
+		C2D0E5A236271BDBC4CC2336 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B4C2AA60ADADC98402B39FB3 /* SimpleGym.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EFF2789693E857A525F99050 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				DB822A65C3FD2502312EDF0C /* SimpleGymApp.swift */,
+				2439B87983ABC73A7D592A85 /* Root */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5386AC8C7C554F18B54846DE /* SimpleGym */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3CABAD04EFA1C34399FA5196 /* Build configuration list for PBXNativeTarget "SimpleGym" */;
+			buildPhases = (
+				D10F417F4AE919B826B65A39 /* Sources */,
+				324D5D0AA9827C2AFFAEA263 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SimpleGym;
+			packageProductDependencies = (
+			);
+			productName = SimpleGym;
+			productReference = B4C2AA60ADADC98402B39FB3 /* SimpleGym.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		13D094D04F7B0F2518F9AE6A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					5386AC8C7C554F18B54846DE = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 39C2FDCC027376B41137C541 /* Build configuration list for PBXProject "SimpleGym" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 7C20F1C8E3AF7B07E1E979BC;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C2D0E5A236271BDBC4CC2336 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5386AC8C7C554F18B54846DE /* SimpleGym */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		324D5D0AA9827C2AFFAEA263 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CEE9564B17CF82252B4D469D /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D10F417F4AE919B826B65A39 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6CE8A848B5348110452AAD2E /* ColorTokens.swift in Sources */,
+				9C1360A0F71E1119EF7920AD /* EmptyStateView.swift in Sources */,
+				42E0DFF960036FD38677DF47 /* HomeScreen.swift in Sources */,
+				D2BB53ED086DCDE9F57B0C87 /* MaterialTokens.swift in Sources */,
+				CCA1E12BE7210DCD8F6696E1 /* PrimaryLiquidGlassButton.swift in Sources */,
+				7B909A7EA81665D3A2794E10 /* Radius.swift in Sources */,
+				0CE71AADA55DE730C9428EB9 /* ScrollChromeSurfaceModifier.swift in Sources */,
+				C6C8D675155D641A5A30E49F /* SimpleGymApp.swift in Sources */,
+				50B5ACFDBC97418BE7886ECB /* SimpleGymRootView.swift in Sources */,
+				299873677E9E863ECD6DD9F7 /* Spacing.swift in Sources */,
+				C34F59A4BD2AE90AB0C435B5 /* TextStyleModifier.swift in Sources */,
+				C9315D6D70E7909B4ABAA9D0 /* Typography.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		589E235269138113CE1BB1BF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		68A843CA7C3E3BD9CFA895FB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		DA20E7DD102957139A5C6873 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SimpleGym/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simplegym.app;
+				PRODUCT_NAME = SimpleGym;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		DD73B1BDE40C38EFADC292A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SimpleGym/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simplegym.app;
+				PRODUCT_NAME = SimpleGym;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		39C2FDCC027376B41137C541 /* Build configuration list for PBXProject "SimpleGym" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				68A843CA7C3E3BD9CFA895FB /* Debug */,
+				589E235269138113CE1BB1BF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3CABAD04EFA1C34399FA5196 /* Build configuration list for PBXNativeTarget "SimpleGym" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DA20E7DD102957139A5C6873 /* Debug */,
+				DD73B1BDE40C38EFADC292A1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 13D094D04F7B0F2518F9AE6A /* Project object */;
+}
