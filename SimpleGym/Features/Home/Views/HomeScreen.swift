@@ -15,6 +15,9 @@ private func performWithoutAnimation(_ updates: () -> Void) {
     }
 }
 
+private let calendarTransitionAnimation = Animation.spring(response: 0.32, dampingFraction: 0.9)
+private let calendarRowCountAnimation = Animation.easeInOut(duration: 0.18)
+
 struct HomeScreen: View {
     @State private var isCalendarExpanded = false
     @State private var userSelectedDate: Date?
@@ -125,7 +128,7 @@ struct HomeScreen: View {
         visibleMonthPageID = simpleGymCalendar.startOfMonth(for: selectedDate)
         visibleWeekPageID = simpleGymCalendar.startOfWeek(for: selectedDate)
 
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
+        withAnimation(calendarTransitionAnimation) {
             isCalendarExpanded.toggle()
         }
     }
@@ -140,10 +143,26 @@ struct HomeScreen: View {
     }
 
     private func jumpToToday(currentDate: Date) {
+        let today = simpleGymCalendar.startOfDay(for: currentDate)
+        let todayMonthStart = simpleGymCalendar.startOfMonth(for: today)
+        let todayWeekStart = simpleGymCalendar.startOfWeek(for: today)
+
         performWithoutAnimation {
             userSelectedDate = nil
-            visibleMonthPageID = simpleGymCalendar.startOfMonth(for: currentDate)
-            visibleWeekPageID = simpleGymCalendar.startOfWeek(for: currentDate)
+
+            if isCalendarExpanded {
+                visibleWeekPageID = todayWeekStart
+            } else {
+                visibleMonthPageID = todayMonthStart
+            }
+        }
+
+        withAnimation(calendarTransitionAnimation) {
+            if isCalendarExpanded {
+                visibleMonthPageID = todayMonthStart
+            } else {
+                visibleWeekPageID = todayWeekStart
+            }
         }
     }
 
@@ -187,6 +206,7 @@ private struct HomeCalendar: View {
     @Binding var visibleMonthPageID: Date?
     @Binding var visibleWeekPageID: Date?
 
+    @State private var monthScrollPageID: Date?
     @State private var monthScrollStartOffsetY: CGFloat?
     @State private var monthScrollStartPageID: Date?
     @State private var monthScrollPeakDeltaY: CGFloat = 0
@@ -235,10 +255,14 @@ private struct HomeCalendar: View {
         return firstCharacter.uppercased() + rawTitle.dropFirst()
     }
 
+    private var presentedExpandedWeekCount: Int {
+        max(calendar.weeksInMonth(containing: displayedMonthStart), 1)
+    }
+
     var body: some View {
         GeometryReader { geometry in
             let metrics = CalendarLayoutMetrics(width: geometry.size.width)
-            let expandedWeeksHeight = metrics.monthGridHeight(weekCount: CalendarLayoutMetrics.expandedMonthWeekCount)
+            let expandedWeeksHeight = metrics.monthGridHeight(weekCount: presentedExpandedWeekCount)
             let visibleWeeksHeight = isExpanded ? expandedWeeksHeight : metrics.weekHeight
 
             VStack(spacing: 0) {
@@ -261,15 +285,22 @@ private struct HomeCalendar: View {
             }
             .scrollChromeSurface()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .animation(.spring(response: 0.32, dampingFraction: 0.9), value: isExpanded)
+            .animation(calendarTransitionAnimation, value: isExpanded)
+            .animation(calendarRowCountAnimation, value: presentedExpandedWeekCount)
         }
         .frame(height: totalHeight)
+        .onAppear {
+            syncMonthScrollPageIDWithBinding()
+        }
+        .onChange(of: visibleMonthPageID) { _, _ in
+            syncMonthScrollPageIDWithBinding()
+        }
     }
 
     private var totalHeight: CGFloat {
         let metrics = CalendarLayoutMetrics(width: 0)
         let weeksHeight = isExpanded
-            ? metrics.monthGridHeight(weekCount: CalendarLayoutMetrics.expandedMonthWeekCount)
+            ? metrics.monthGridHeight(weekCount: presentedExpandedWeekCount)
             : metrics.weekHeight
         return metrics.monthRowHeight + metrics.weekdayRowHeight + weeksHeight + metrics.sectionHeaderHeight
     }
@@ -346,7 +377,7 @@ private struct HomeCalendar: View {
                 ForEach(monthPageAnchors, id: \.self) { monthStart in
                     monthGrid(monthStart: monthStart, metrics: metrics)
                         .frame(width: metrics.width)
-                        .frame(height: metrics.monthGridHeight(weekCount: CalendarLayoutMetrics.expandedMonthWeekCount), alignment: .top)
+                        .frame(height: metrics.monthGridPageHeight, alignment: .top)
                         .id(monthStart)
                 }
             }
@@ -354,7 +385,7 @@ private struct HomeCalendar: View {
         }
         .scrollClipDisabled()
         .scrollTargetBehavior(.viewAligned(limitBehavior: .alwaysByOne, anchor: .top))
-        .scrollPosition(id: $visibleMonthPageID, anchor: .top)
+        .scrollPosition(id: $monthScrollPageID, anchor: .top)
         .disableScrollsToTop()
         .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }) { _, newOffsetY in
             updateMonthScrollPeak(with: newOffsetY)
@@ -438,10 +469,16 @@ private struct HomeCalendar: View {
             return
         }
 
-        if newPhase == .tracking || newPhase == .interacting {
+        let settledMonthPageID = normalizedMonthPageID(visibleMonthPageID) ?? displayedMonthStart
+
+        if newPhase != .idle, monthScrollStartPageID == nil {
+            monthScrollStartPageID = settledMonthPageID
+        }
+
+        let isUserInteractingWithMonthPager = newPhase == .tracking || newPhase == .interacting
+        if isUserInteractingWithMonthPager {
             if monthScrollStartOffsetY == nil {
                 monthScrollStartOffsetY = context.geometry.contentOffset.y
-                monthScrollStartPageID = normalizedMonthPageID(visibleMonthPageID) ?? displayedMonthStart
                 monthScrollPeakDeltaY = 0
             }
             return
@@ -461,11 +498,17 @@ private struct HomeCalendar: View {
 
         let scrollDelta = monthScrollPeakDeltaY
         guard abs(scrollDelta) >= CalendarLayoutMetrics.minimalMonthChangeScrollDistance else {
+            updateSettledMonthPageID(
+                normalizedMonthPageID(monthScrollPageID) ?? settledMonthPageID,
+                animated: true
+            )
             return
         }
 
-        let settledPageID = normalizedMonthPageID(visibleMonthPageID) ?? displayedMonthStart
+        let currentScrollPageID = normalizedMonthPageID(monthScrollPageID) ?? settledMonthPageID
+        let settledPageID = currentScrollPageID
         guard calendar.isDate(settledPageID, equalTo: startPageID, toGranularity: .month) else {
+            updateSettledMonthPageID(settledPageID, animated: true)
             return
         }
 
@@ -475,8 +518,10 @@ private struct HomeCalendar: View {
         }
 
         performWithoutAnimation {
-            visibleMonthPageID = calendar.startOfMonth(for: nextMonth)
+            let normalizedNextMonth = calendar.startOfMonth(for: nextMonth)
+            monthScrollPageID = normalizedNextMonth
         }
+        updateSettledMonthPageID(calendar.startOfMonth(for: nextMonth), animated: true)
     }
 
     private func updateMonthScrollPeak(with offsetY: CGFloat) {
@@ -499,8 +544,32 @@ private struct HomeCalendar: View {
         monthScrollPeakDeltaY = 0
     }
 
+    private func syncMonthScrollPageIDWithBinding() {
+        let normalizedBindingPageID = normalizedMonthPageID(visibleMonthPageID) ?? displayedMonthStart
+        guard monthScrollPageID != normalizedBindingPageID else {
+            return
+        }
+
+        monthScrollPageID = normalizedBindingPageID
+    }
+
     private func normalizedMonthPageID(_ pageID: Date?) -> Date? {
         pageID.map(calendar.startOfMonth(for:))
+    }
+
+    private func updateSettledMonthPageID(_ monthStart: Date, animated: Bool) {
+        let normalizedMonthStart = calendar.startOfMonth(for: monthStart)
+        guard normalizedMonthPageID(visibleMonthPageID) != normalizedMonthStart else {
+            return
+        }
+
+        if animated {
+            withAnimation(calendarRowCountAnimation) {
+                visibleMonthPageID = normalizedMonthStart
+            }
+        } else {
+            visibleMonthPageID = normalizedMonthStart
+        }
     }
 }
 
@@ -646,7 +715,7 @@ private enum HomeCalendarDayStyle {
 
 private struct CalendarLayoutMetrics {
     static let minimalMonthChangeScrollDistance: CGFloat = 8
-    static let expandedMonthWeekCount: Int = 6
+    static let monthPageWeekCount: Int = 6
 
     let width: CGFloat
 
@@ -658,6 +727,10 @@ private struct CalendarLayoutMetrics {
     let weekHeight: CGFloat = 44
     let weekSpacing: CGFloat = 7
     let sectionHeaderHeight: CGFloat = 56
+
+    var monthGridPageHeight: CGFloat {
+        monthGridHeight(weekCount: Self.monthPageWeekCount)
+    }
 
     var daySpacing: CGFloat {
         max((width - (horizontalInset * 2) - (daySize * 7)) / 6, 0)
@@ -678,14 +751,42 @@ private struct ScrollViewConfigurationView: UIViewRepresentable {
 
     func updateUIView(_ view: UIView, context: Context) {
         DispatchQueue.main.async {
-            guard let scrollView = sequence(first: view.superview, next: { $0?.superview })
-                .first(where: { $0 is UIScrollView }) as? UIScrollView
-            else {
+            let rootView = view.window ?? topmostSuperview(for: view)
+            guard let rootView else {
                 return
             }
 
-            configure(scrollView)
+            var configuredScrollViews = Set<ObjectIdentifier>()
+            configureScrollViews(in: rootView, configuredScrollViews: &configuredScrollViews)
         }
+    }
+
+    private func configureScrollViews(
+        in rootView: UIView,
+        configuredScrollViews: inout Set<ObjectIdentifier>
+    ) {
+        if let scrollView = rootView as? UIScrollView {
+            let identifier = ObjectIdentifier(scrollView)
+            if configuredScrollViews.insert(identifier).inserted {
+                configure(scrollView)
+            }
+        }
+
+        rootView.subviews.forEach { subview in
+            configureScrollViews(in: subview, configuredScrollViews: &configuredScrollViews)
+        }
+    }
+
+    private func topmostSuperview(for view: UIView) -> UIView? {
+        var candidate = view.superview
+        var topmostSuperview = candidate
+
+        while let superview = candidate?.superview {
+            topmostSuperview = superview
+            candidate = superview
+        }
+
+        return topmostSuperview
     }
 }
 
