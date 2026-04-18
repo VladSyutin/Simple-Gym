@@ -207,9 +207,6 @@ private struct HomeCalendar: View {
     @Binding var visibleWeekPageID: Date?
 
     @State private var monthScrollPageID: Date?
-    @State private var monthScrollStartOffsetY: CGFloat?
-    @State private var monthScrollStartPageID: Date?
-    @State private var monthScrollPeakDeltaY: CGFloat = 0
 
     let currentDate: Date
     let selectedDate: Date
@@ -271,6 +268,7 @@ private struct HomeCalendar: View {
 
                 ZStack(alignment: .top) {
                     monthPager(metrics: metrics)
+                        .frame(height: metrics.monthGridPageHeight, alignment: .top)
                         .opacity(isExpanded ? 1 : 0)
                         .allowsHitTesting(isExpanded)
 
@@ -293,7 +291,7 @@ private struct HomeCalendar: View {
             syncMonthScrollPageIDWithBinding()
         }
         .onChange(of: visibleMonthPageID) { _, _ in
-            syncMonthScrollPageIDWithBinding()
+            syncMonthScrollPageIDWithBinding(animated: true)
         }
     }
 
@@ -365,6 +363,7 @@ private struct HomeCalendar: View {
             .scrollTargetLayout()
         }
         .scrollClipDisabled()
+        .frame(height: metrics.weekHeight, alignment: .top)
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $visibleWeekPageID)
         .disableScrollsToTop()
@@ -384,12 +383,9 @@ private struct HomeCalendar: View {
             .scrollTargetLayout()
         }
         .scrollClipDisabled()
-        .scrollTargetBehavior(.viewAligned(limitBehavior: .alwaysByOne, anchor: .top))
-        .scrollPosition(id: $monthScrollPageID, anchor: .top)
+        .scrollTargetBehavior(.paging)
+        .scrollPosition(id: $monthScrollPageID)
         .disableScrollsToTop()
-        .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }) { _, newOffsetY in
-            updateMonthScrollPeak(with: newOffsetY)
-        }
         .onScrollPhaseChange(handleMonthScrollPhaseChange(_:_:_:))
     }
 
@@ -465,22 +461,6 @@ private struct HomeCalendar: View {
 
     private func handleMonthScrollPhaseChange(_ oldPhase: ScrollPhase, _ newPhase: ScrollPhase, _ context: ScrollPhaseChangeContext) {
         guard isExpanded else {
-            resetMonthScrollTracking()
-            return
-        }
-
-        let settledMonthPageID = normalizedMonthPageID(visibleMonthPageID) ?? displayedMonthStart
-
-        if newPhase != .idle, monthScrollStartPageID == nil {
-            monthScrollStartPageID = settledMonthPageID
-        }
-
-        let isUserInteractingWithMonthPager = newPhase == .tracking || newPhase == .interacting
-        if isUserInteractingWithMonthPager {
-            if monthScrollStartOffsetY == nil {
-                monthScrollStartOffsetY = context.geometry.contentOffset.y
-                monthScrollPeakDeltaY = 0
-            }
             return
         }
 
@@ -488,69 +468,26 @@ private struct HomeCalendar: View {
             return
         }
 
-        defer {
-            resetMonthScrollTracking()
-        }
-
-        guard let startPageID = monthScrollStartPageID else {
+        guard let settledMonthPageID = normalizedMonthPageID(monthScrollPageID) else {
             return
         }
 
-        let scrollDelta = monthScrollPeakDeltaY
-        guard abs(scrollDelta) >= CalendarLayoutMetrics.minimalMonthChangeScrollDistance else {
-            updateSettledMonthPageID(
-                normalizedMonthPageID(monthScrollPageID) ?? settledMonthPageID,
-                animated: true
-            )
-            return
-        }
-
-        let currentScrollPageID = normalizedMonthPageID(monthScrollPageID) ?? settledMonthPageID
-        let settledPageID = currentScrollPageID
-        guard calendar.isDate(settledPageID, equalTo: startPageID, toGranularity: .month) else {
-            updateSettledMonthPageID(settledPageID, animated: true)
-            return
-        }
-
-        let monthStep = scrollDelta > 0 ? 1 : -1
-        guard let nextMonth = calendar.date(byAdding: .month, value: monthStep, to: startPageID) else {
-            return
-        }
-
-        performWithoutAnimation {
-            let normalizedNextMonth = calendar.startOfMonth(for: nextMonth)
-            monthScrollPageID = normalizedNextMonth
-        }
-        updateSettledMonthPageID(calendar.startOfMonth(for: nextMonth), animated: true)
+        updateSettledMonthPageID(settledMonthPageID, animated: true)
     }
 
-    private func updateMonthScrollPeak(with offsetY: CGFloat) {
-        guard
-            isExpanded,
-            let startOffsetY = monthScrollStartOffsetY
-        else {
-            return
-        }
-
-        let delta = offsetY - startOffsetY
-        if abs(delta) > abs(monthScrollPeakDeltaY) {
-            monthScrollPeakDeltaY = delta
-        }
-    }
-
-    private func resetMonthScrollTracking() {
-        monthScrollStartOffsetY = nil
-        monthScrollStartPageID = nil
-        monthScrollPeakDeltaY = 0
-    }
-
-    private func syncMonthScrollPageIDWithBinding() {
+    private func syncMonthScrollPageIDWithBinding(animated: Bool = false) {
         let normalizedBindingPageID = normalizedMonthPageID(visibleMonthPageID) ?? displayedMonthStart
         guard monthScrollPageID != normalizedBindingPageID else {
             return
         }
 
-        monthScrollPageID = normalizedBindingPageID
+        if animated {
+            withAnimation(calendarTransitionAnimation) {
+                monthScrollPageID = normalizedBindingPageID
+            }
+        } else {
+            monthScrollPageID = normalizedBindingPageID
+        }
     }
 
     private func normalizedMonthPageID(_ pageID: Date?) -> Date? {
@@ -714,7 +651,6 @@ private enum HomeCalendarDayStyle {
 }
 
 private struct CalendarLayoutMetrics {
-    static let minimalMonthChangeScrollDistance: CGFloat = 8
     static let monthPageWeekCount: Int = 6
 
     let width: CGFloat
