@@ -17,12 +17,15 @@ private func performWithoutAnimation(_ updates: () -> Void) {
 
 private let calendarTransitionAnimation = Animation.spring(response: 0.32, dampingFraction: 0.9)
 private let calendarRowCountAnimation = Animation.easeInOut(duration: 0.18)
+private let calendarTransitionSettleDuration: TimeInterval = 0.38
 
 struct HomeScreen: View {
     @State private var isCalendarExpanded = false
     @State private var userSelectedDate: Date?
     @State private var visibleMonthPageID: Date? = simpleGymCalendar.startOfMonth(for: Date())
     @State private var visibleWeekPageID: Date? = simpleGymCalendar.startOfWeek(for: Date())
+    @State private var transitionDisplayedMonthStart: Date?
+    @State private var displayedMonthReleaseWorkItem: DispatchWorkItem?
 
     private let trainingDates: Set<Date> = Set(
         [
@@ -42,7 +45,7 @@ struct HomeScreen: View {
     @ViewBuilder
     private func screenContent(currentDate: Date) -> some View {
         let selectedDate = selectedDate(for: currentDate)
-        let displayedMonthStart = displayedMonthStart(for: selectedDate)
+        let displayedMonthStart = transitionDisplayedMonthStart ?? resolvedDisplayedMonthStart(for: selectedDate)
 
         VStack(spacing: 0) {
             HomeCalendar(
@@ -114,7 +117,7 @@ struct HomeScreen: View {
         simpleGymCalendar.startOfDay(for: userSelectedDate ?? currentDate)
     }
 
-    private func displayedMonthStart(for selectedDate: Date) -> Date {
+    private func resolvedDisplayedMonthStart(for selectedDate: Date) -> Date {
         if isCalendarExpanded {
             return visibleMonthPageID ?? simpleGymCalendar.startOfMonth(for: selectedDate)
         }
@@ -125,16 +128,36 @@ struct HomeScreen: View {
     }
 
     private func toggleCalendar(selectedDate: Date) {
-        visibleMonthPageID = simpleGymCalendar.startOfMonth(for: selectedDate)
-        visibleWeekPageID = simpleGymCalendar.startOfWeek(for: selectedDate)
+        let targetMonthStart = simpleGymCalendar.startOfMonth(for: selectedDate)
+        let targetWeekStart = simpleGymCalendar.startOfWeek(for: selectedDate)
+
+        displayedMonthReleaseWorkItem?.cancel()
+        displayedMonthReleaseWorkItem = nil
+
+        transitionDisplayedMonthStart = targetMonthStart
+        visibleMonthPageID = targetMonthStart
+        visibleWeekPageID = targetWeekStart
 
         withAnimation(calendarTransitionAnimation) {
             isCalendarExpanded.toggle()
         }
+
+        let workItem = DispatchWorkItem {
+            transitionDisplayedMonthStart = nil
+            displayedMonthReleaseWorkItem = nil
+        }
+
+        displayedMonthReleaseWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + calendarTransitionSettleDuration, execute: workItem)
     }
 
     private func setSelectedDate(_ date: Date, currentDate: Date) {
         let normalizedDate = simpleGymCalendar.startOfDay(for: date)
+
+        displayedMonthReleaseWorkItem?.cancel()
+        displayedMonthReleaseWorkItem = nil
+        transitionDisplayedMonthStart = nil
+
         performWithoutAnimation {
             userSelectedDate = simpleGymCalendar.isDate(normalizedDate, inSameDayAs: currentDate) ? nil : normalizedDate
             visibleMonthPageID = simpleGymCalendar.startOfMonth(for: normalizedDate)
@@ -146,6 +169,10 @@ struct HomeScreen: View {
         let today = simpleGymCalendar.startOfDay(for: currentDate)
         let todayMonthStart = simpleGymCalendar.startOfMonth(for: today)
         let todayWeekStart = simpleGymCalendar.startOfWeek(for: today)
+
+        displayedMonthReleaseWorkItem?.cancel()
+        displayedMonthReleaseWorkItem = nil
+        transitionDisplayedMonthStart = nil
 
         performWithoutAnimation {
             userSelectedDate = nil
@@ -207,6 +234,7 @@ private struct HomeCalendar: View {
     @Binding var visibleWeekPageID: Date?
 
     @State private var monthScrollPageID: Date?
+    @State private var showsWeekPagerOverlay = false
 
     let currentDate: Date
     let selectedDate: Date
@@ -256,6 +284,15 @@ private struct HomeCalendar: View {
         max(calendar.weeksInMonth(containing: displayedMonthStart), 1)
     }
 
+    private var monthPageStartForAnimation: Date {
+        normalizedMonthPageID(visibleMonthPageID)
+            ?? calendar.startOfMonth(for: selectedDate)
+    }
+
+    private var showsAnimatedMonthPager: Bool {
+        isExpanded || !showsWeekPagerOverlay
+    }
+
     var body: some View {
         GeometryReader { geometry in
             let metrics = CalendarLayoutMetrics(width: geometry.size.width)
@@ -269,12 +306,14 @@ private struct HomeCalendar: View {
                 ZStack(alignment: .top) {
                     monthPager(metrics: metrics)
                         .frame(height: metrics.monthGridPageHeight, alignment: .top)
-                        .opacity(isExpanded ? 1 : 0)
+                        .offset(y: monthPagerOffset(metrics: metrics))
+                        .opacity(showsAnimatedMonthPager ? 1 : 0)
                         .allowsHitTesting(isExpanded)
 
                     weekPager(metrics: metrics)
-                        .opacity(isExpanded ? 0 : 1)
+                        .opacity(!isExpanded ? (showsWeekPagerOverlay ? 1 : 0.001) : 0)
                         .allowsHitTesting(!isExpanded)
+                        .accessibilityHidden(isExpanded || !showsWeekPagerOverlay)
                 }
                 .frame(height: visibleWeeksHeight, alignment: .top)
                 .clipped()
@@ -292,6 +331,12 @@ private struct HomeCalendar: View {
         }
         .onChange(of: visibleMonthPageID) { _, _ in
             syncMonthScrollPageIDWithBinding(animated: true)
+        }
+        .onChange(of: isExpanded) { _, newValue in
+            guard newValue else { return }
+            performWithoutAnimation {
+                showsWeekPagerOverlay = false
+            }
         }
     }
 
@@ -367,6 +412,7 @@ private struct HomeCalendar: View {
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $visibleWeekPageID)
         .disableScrollsToTop()
+        .onScrollPhaseChange(handleWeekScrollPhaseChange(_:_:_:))
     }
 
     @ViewBuilder
@@ -393,25 +439,30 @@ private struct HomeCalendar: View {
     private func monthGrid(monthStart: Date, metrics: CalendarLayoutMetrics) -> some View {
         VStack(spacing: metrics.weekSpacing) {
             ForEach(Array(calendar.monthWeeks(containing: monthStart).enumerated()), id: \.offset) { _, week in
-                monthWeekRow(days: week, metrics: metrics)
+                monthWeekRow(days: week, monthStart: monthStart, metrics: metrics)
             }
         }
     }
 
     @ViewBuilder
-    private func monthWeekRow(days: [CalendarDay?], metrics: CalendarLayoutMetrics) -> some View {
+    private func monthWeekRow(days: [CalendarDay?], monthStart: Date, metrics: CalendarLayoutMetrics) -> some View {
         HStack(spacing: metrics.daySpacing) {
             ForEach(Array(days.enumerated()), id: \.offset) { _, day in
                 Group {
                     if let day {
-                        HomeCalendarDayCell(
-                            day: day,
-                            style: dayStyle(for: day),
-                            showsTraining: day.containsTraining(in: trainingDates, calendar: calendar),
-                            onTap: {
-                                onDateTap(day.date)
-                            }
-                        )
+                        if isExpanded && !calendar.isDate(day.date, equalTo: monthStart, toGranularity: .month) {
+                            Color.clear
+                                .accessibilityHidden(true)
+                        } else {
+                            HomeCalendarDayCell(
+                                day: day,
+                                style: dayStyle(for: day, referenceMonthStart: monthStart, highlightsOutsideMonth: false),
+                                showsTraining: day.containsTraining(in: trainingDates, calendar: calendar),
+                                onTap: {
+                                    onDateTap(day.date)
+                                }
+                            )
+                        }
                     } else {
                         Color.clear
                             .accessibilityHidden(true)
@@ -430,7 +481,7 @@ private struct HomeCalendar: View {
             ForEach(days) { day in
                 HomeCalendarDayCell(
                     day: day,
-                    style: dayStyle(for: day),
+                    style: dayStyle(for: day, referenceMonthStart: nil, highlightsOutsideMonth: false),
                     showsTraining: day.containsTraining(in: trainingDates, calendar: calendar),
                     onTap: {
                         onDateTap(day.date)
@@ -443,7 +494,11 @@ private struct HomeCalendar: View {
         .frame(height: metrics.weekHeight)
     }
 
-    private func dayStyle(for day: CalendarDay) -> HomeCalendarDayStyle {
+    private func dayStyle(
+        for day: CalendarDay,
+        referenceMonthStart: Date?,
+        highlightsOutsideMonth: Bool
+    ) -> HomeCalendarDayStyle {
         if calendar.isDate(day.date, inSameDayAs: currentDate) && calendar.isDate(day.date, inSameDayAs: selectedDate) {
             return .todaySelected
         }
@@ -454,6 +509,14 @@ private struct HomeCalendar: View {
 
         if calendar.isDate(day.date, inSameDayAs: currentDate) {
             return .today
+        }
+
+        if
+            highlightsOutsideMonth,
+            let referenceMonthStart,
+            !calendar.isDate(day.date, equalTo: referenceMonthStart, toGranularity: .month)
+        {
+            return .outsideMonth
         }
 
         return .current
@@ -492,6 +555,39 @@ private struct HomeCalendar: View {
 
     private func normalizedMonthPageID(_ pageID: Date?) -> Date? {
         pageID.map(calendar.startOfMonth(for:))
+    }
+
+    private func handleWeekScrollPhaseChange(_ oldPhase: ScrollPhase, _ newPhase: ScrollPhase, _ context: ScrollPhaseChangeContext) {
+        guard !isExpanded else {
+            performWithoutAnimation {
+                showsWeekPagerOverlay = false
+            }
+            return
+        }
+
+        guard oldPhase != newPhase else {
+            return
+        }
+
+        if newPhase == .idle {
+            DispatchQueue.main.async {
+                guard !isExpanded else { return }
+                performWithoutAnimation {
+                    showsWeekPagerOverlay = false
+                }
+            }
+        } else {
+            performWithoutAnimation {
+                showsWeekPagerOverlay = true
+            }
+        }
+    }
+
+    private func monthPagerOffset(metrics: CalendarLayoutMetrics) -> CGFloat {
+        guard !isExpanded else { return 0 }
+
+        let selectedWeekIndex = calendar.weekIndex(of: selectedDate, inMonthContaining: monthPageStartForAnimation)
+        return -CGFloat(selectedWeekIndex) * (metrics.weekHeight + metrics.weekSpacing)
     }
 
     private func updateSettledMonthPageID(_ monthStart: Date, animated: Bool) {
@@ -603,6 +699,7 @@ private struct CalendarDay: Identifiable, Hashable {
 
 private enum HomeCalendarDayStyle {
     case current
+    case outsideMonth
     case today
     case selected
     case todaySelected
@@ -611,7 +708,7 @@ private enum HomeCalendarDayStyle {
         switch self {
         case .selected, .todaySelected:
             return .selectedDayNumber
-        case .current, .today:
+        case .current, .outsideMonth, .today:
             return .dayNumber
         }
     }
@@ -620,6 +717,8 @@ private enum HomeCalendarDayStyle {
         switch self {
         case .current:
             return ColorTokens.labelPrimary
+        case .outsideMonth:
+            return ColorTokens.labelTertiary
         case .today, .selected:
             return ColorTokens.accentBlue
         case .todaySelected:
@@ -633,7 +732,7 @@ private enum HomeCalendarDayStyle {
             return ColorTokens.accentBlueSelectionBackground
         case .todaySelected:
             return ColorTokens.accentBlue
-        case .current, .today:
+        case .current, .outsideMonth, .today:
             return nil
         }
     }
@@ -642,6 +741,8 @@ private enum HomeCalendarDayStyle {
         switch self {
         case .current:
             return ColorTokens.labelPrimary
+        case .outsideMonth:
+            return ColorTokens.labelTertiary
         case .today, .selected:
             return ColorTokens.accentBlue
         case .todaySelected:
@@ -770,11 +871,7 @@ private extension Calendar {
         var currentDay = firstWeekInterval.start
 
         while currentDay < lastWeekInterval.end {
-            if isDate(currentDay, equalTo: monthStart, toGranularity: .month) {
-                days.append(CalendarDay(date: currentDay))
-            } else {
-                days.append(nil)
-            }
+            days.append(CalendarDay(date: currentDay))
             guard let nextDay = date(byAdding: .day, value: 1, to: currentDay) else {
                 break
             }
@@ -788,6 +885,15 @@ private extension Calendar {
 
     func weeksInMonth(containing monthStart: Date) -> Int {
         monthWeeks(containing: monthStart).count
+    }
+
+    func weekIndex(of date: Date, inMonthContaining monthStart: Date) -> Int {
+        monthWeeks(containing: monthStart).firstIndex { week in
+            week.contains { day in
+                guard let day else { return false }
+                return isDate(day.date, inSameDayAs: date)
+            }
+        } ?? 0
     }
 }
 
