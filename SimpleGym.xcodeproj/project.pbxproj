@@ -30,7 +30,7 @@
 		939536601713B21A62DED900 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		9C9EC35B9940D082040E129B /* TextStyleModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextStyleModifier.swift; sourceTree = "<group>"; };
 		AFE054EA6C902305A88C5333 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
-		B4C2AA60ADADC98402B39FB3 /* SimpleGym.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SimpleGym.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B4C2AA60ADADC98402B39FB3 /* SimpleGym.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimpleGym.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BFF2248D053C3C83896DF6A1 /* ColorTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTokens.swift; sourceTree = "<group>"; };
 		D919FB5F14344D5FDD6CE336 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DAAF498DE471659F8593B28E /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
@@ -187,7 +187,6 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					5386AC8C7C554F18B54846DE = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -370,7 +369,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 92U4877ZD3;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SimpleGym/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -395,7 +394,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 92U4877ZD3;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SimpleGym/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
