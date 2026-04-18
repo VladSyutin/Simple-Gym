@@ -630,7 +630,7 @@ private enum HomeCalendarDayStyle {
     var backgroundColor: Color? {
         switch self {
         case .selected:
-            return ColorTokens.accentBlueSoft
+            return ColorTokens.accentBlueSelectionBackground
         case .todaySelected:
             return ColorTokens.accentBlue
         case .current, .today:

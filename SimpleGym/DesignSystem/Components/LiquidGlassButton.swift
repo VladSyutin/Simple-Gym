@@ -11,7 +11,7 @@ enum LiquidGlassButtonVariant: String, CaseIterable, Identifiable {
         case .tinted:
             return ColorTokens.white
         case .clear:
-            return ColorTokens.vibrantControlPrimary
+            return ColorTokens.labelVibrantControlPrimary
         }
     }
 }
@@ -60,7 +60,7 @@ struct LiquidGlassSymbolLabel: View {
     var body: some View {
         Image(systemName: systemImage)
             .font(Typography.symbolButtonLabel.font)
-            .foregroundStyle(ColorTokens.vibrantControlPrimary)
+            .foregroundStyle(ColorTokens.labelVibrantControlPrimary)
             .frame(width: Metrics.controlSize, height: Metrics.controlSize)
             .contentShape(Circle())
             .glassEffect(MaterialTokens.symbolButtonGlass, in: Circle())
