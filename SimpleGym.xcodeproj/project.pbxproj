@@ -16,15 +16,14 @@
 		9C1360A0F71E1119EF7920AD /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 939536601713B21A62DED900 /* EmptyStateView.swift */; };
 		C34F59A4BD2AE90AB0C435B5 /* TextStyleModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C9EC35B9940D082040E129B /* TextStyleModifier.swift */; };
 		C6C8D675155D641A5A30E49F /* SimpleGymApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB822A65C3FD2502312EDF0C /* SimpleGymApp.swift */; };
+		C808CC219A1C14AF9B9970B5 /* LiquidGlassButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8D49C63EA483A20A87B9B39 /* LiquidGlassButton.swift */; };
 		C9315D6D70E7909B4ABAA9D0 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37FF7E8E9975F6A6A0303D15 /* Typography.swift */; };
-		CCA1E12BE7210DCD8F6696E1 /* PrimaryLiquidGlassButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C06AC589737DF793D3CF208 /* PrimaryLiquidGlassButton.swift */; };
 		CEE9564B17CF82252B4D469D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D919FB5F14344D5FDD6CE336 /* Assets.xcassets */; };
 		D2BB53ED086DCDE9F57B0C87 /* MaterialTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11823809A397DCC29A53F7F3 /* MaterialTokens.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		11823809A397DCC29A53F7F3 /* MaterialTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialTokens.swift; sourceTree = "<group>"; };
-		1C06AC589737DF793D3CF208 /* PrimaryLiquidGlassButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryLiquidGlassButton.swift; sourceTree = "<group>"; };
 		37FF7E8E9975F6A6A0303D15 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		5AA2DACC4E77C9EC95B14635 /* Radius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radius.swift; sourceTree = "<group>"; };
 		72F3AE00F372059660317E17 /* ScrollChromeSurfaceModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollChromeSurfaceModifier.swift; sourceTree = "<group>"; };
@@ -36,6 +35,7 @@
 		D919FB5F14344D5FDD6CE336 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DAAF498DE471659F8593B28E /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		DB822A65C3FD2502312EDF0C /* SimpleGymApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymApp.swift; sourceTree = "<group>"; };
+		F8D49C63EA483A20A87B9B39 /* LiquidGlassButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassButton.swift; sourceTree = "<group>"; };
 		FF9A42A06926DAD360DD06DE /* SimpleGymRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymRootView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -44,8 +44,16 @@
 			isa = PBXGroup;
 			children = (
 				6209E3516FA2681FF1ABED26 /* Home */,
+				174DE9816168F73DD96CE6C8 /* Playground */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		174DE9816168F73DD96CE6C8 /* Playground */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Playground;
 			sourceTree = "<group>";
 		};
 		2439B87983ABC73A7D592A85 /* Root */ = {
@@ -77,7 +85,7 @@
 			isa = PBXGroup;
 			children = (
 				939536601713B21A62DED900 /* EmptyStateView.swift */,
-				1C06AC589737DF793D3CF208 /* PrimaryLiquidGlassButton.swift */,
+				F8D49C63EA483A20A87B9B39 /* LiquidGlassButton.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -222,8 +230,8 @@
 				6CE8A848B5348110452AAD2E /* ColorTokens.swift in Sources */,
 				9C1360A0F71E1119EF7920AD /* EmptyStateView.swift in Sources */,
 				42E0DFF960036FD38677DF47 /* HomeScreen.swift in Sources */,
+				C808CC219A1C14AF9B9970B5 /* LiquidGlassButton.swift in Sources */,
 				D2BB53ED086DCDE9F57B0C87 /* MaterialTokens.swift in Sources */,
-				CCA1E12BE7210DCD8F6696E1 /* PrimaryLiquidGlassButton.swift in Sources */,
 				7B909A7EA81665D3A2794E10 /* Radius.swift in Sources */,
 				0CE71AADA55DE730C9428EB9 /* ScrollChromeSurfaceModifier.swift in Sources */,
 				C6C8D675155D641A5A30E49F /* SimpleGymApp.swift in Sources */,
