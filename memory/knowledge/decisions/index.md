@@ -7,4 +7,4 @@
 - [[memory/knowledge/decisions/adr-0002-ios-26-minimum-deployment-target|ADR: iOS 26 As The Minimum Deployment Target]]
 
 ## Последнее обновление
-- 2026-04-18 21:00 MSK
+- 2026-04-19 15:57 MSK

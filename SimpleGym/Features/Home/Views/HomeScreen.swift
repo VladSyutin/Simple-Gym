@@ -16,8 +16,9 @@ private func performWithoutAnimation(_ updates: () -> Void) {
 }
 
 private let calendarTransitionAnimation = Animation.spring(response: 0.32, dampingFraction: 0.9)
-private let calendarRowCountAnimation = Animation.easeInOut(duration: 0.18)
-private let calendarTransitionSettleDuration: TimeInterval = 0.38
+private let calendarLayoutTransitionAnimation = Animation.timingCurve(0.2, 0.88, 0.24, 1, duration: 0.42)
+private let calendarRowCountAnimation = Animation.timingCurve(0.2, 0.88, 0.24, 1, duration: 0.36)
+private let calendarTransitionSettleDuration: TimeInterval = 0.46
 
 struct HomeScreen: View {
     @State private var isCalendarExpanded = false
@@ -46,6 +47,7 @@ struct HomeScreen: View {
     private func screenContent(currentDate: Date) -> some View {
         let selectedDate = selectedDate(for: currentDate)
         let displayedMonthStart = transitionDisplayedMonthStart ?? resolvedDisplayedMonthStart(for: selectedDate)
+        let isCalendarTransitioning = transitionDisplayedMonthStart != nil
 
         VStack(spacing: 0) {
             HomeCalendar(
@@ -54,6 +56,7 @@ struct HomeScreen: View {
                 currentDate: currentDate,
                 selectedDate: selectedDate,
                 displayedMonthStart: displayedMonthStart,
+                isTransitioning: isCalendarTransitioning,
                 isExpanded: isCalendarExpanded,
                 trainingDates: trainingDates,
                 onMonthTap: {
@@ -86,6 +89,7 @@ struct HomeScreen: View {
 
             Spacer()
         }
+        .animation(calendarLayoutTransitionAnimation, value: isCalendarExpanded)
         .background(ColorTokens.backgroundPrimary.ignoresSafeArea())
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
@@ -122,9 +126,7 @@ struct HomeScreen: View {
             return visibleMonthPageID ?? simpleGymCalendar.startOfMonth(for: selectedDate)
         }
 
-        let weekStart = visibleWeekPageID ?? simpleGymCalendar.startOfWeek(for: selectedDate)
-        let pivotDate = simpleGymCalendar.date(byAdding: .day, value: 3, to: weekStart) ?? weekStart
-        return simpleGymCalendar.startOfMonth(for: pivotDate)
+        return simpleGymCalendar.startOfMonth(for: selectedDate)
     }
 
     private func toggleCalendar(selectedDate: Date) {
@@ -138,9 +140,7 @@ struct HomeScreen: View {
         visibleMonthPageID = targetMonthStart
         visibleWeekPageID = targetWeekStart
 
-        withAnimation(calendarTransitionAnimation) {
-            isCalendarExpanded.toggle()
-        }
+        isCalendarExpanded.toggle()
 
         let workItem = DispatchWorkItem {
             transitionDisplayedMonthStart = nil
@@ -239,6 +239,7 @@ private struct HomeCalendar: View {
     let currentDate: Date
     let selectedDate: Date
     let displayedMonthStart: Date
+    let isTransitioning: Bool
     let isExpanded: Bool
     let trainingDates: Set<Date>
     let onMonthTap: () -> Void
@@ -284,13 +285,12 @@ private struct HomeCalendar: View {
         max(calendar.weeksInMonth(containing: displayedMonthStart), 1)
     }
 
-    private var monthPageStartForAnimation: Date {
-        normalizedMonthPageID(visibleMonthPageID)
-            ?? calendar.startOfMonth(for: selectedDate)
-    }
-
     private var showsAnimatedMonthPager: Bool {
         isExpanded || !showsWeekPagerOverlay
+    }
+
+    private var selectedWeekIndexInDisplayedMonth: Int {
+        calendar.weekIndex(of: selectedDate, inMonthContaining: displayedMonthStart)
     }
 
     var body: some View {
@@ -307,8 +307,15 @@ private struct HomeCalendar: View {
                     monthPager(metrics: metrics)
                         .frame(height: metrics.monthGridPageHeight, alignment: .top)
                         .offset(y: monthPagerOffset(metrics: metrics))
-                        .opacity(showsAnimatedMonthPager ? 1 : 0)
-                        .allowsHitTesting(isExpanded)
+                        .opacity(isTransitioning ? 0 : (showsAnimatedMonthPager ? 1 : 0))
+                        .allowsHitTesting(isExpanded && !isTransitioning)
+                        .animation(nil, value: isTransitioning)
+
+                    transitionMonthGrid(metrics: metrics)
+                        .opacity(isTransitioning ? 1 : 0)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(!isTransitioning)
+                        .animation(nil, value: isTransitioning)
 
                     weekPager(metrics: metrics)
                         .opacity(!isExpanded ? (showsWeekPagerOverlay ? 1 : 0.001) : 0)
@@ -322,10 +329,10 @@ private struct HomeCalendar: View {
             }
             .scrollChromeSurface()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .animation(calendarTransitionAnimation, value: isExpanded)
-            .animation(calendarRowCountAnimation, value: presentedExpandedWeekCount)
         }
         .frame(height: totalHeight)
+        .animation(calendarLayoutTransitionAnimation, value: isExpanded)
+        .animation(calendarRowCountAnimation, value: presentedExpandedWeekCount)
         .onAppear {
             syncMonthScrollPageIDWithBinding()
         }
@@ -334,10 +341,15 @@ private struct HomeCalendar: View {
             // Animating that page swap makes a simple date tap look like an unintended scroll.
             syncMonthScrollPageIDWithBinding(animated: isExpanded)
         }
+        .onChange(of: displayedMonthStart) { _, _ in
+            guard !isExpanded else { return }
+            syncMonthScrollPageIDWithBinding()
+        }
         .onChange(of: isExpanded) { _, newValue in
-            guard newValue else { return }
-            performWithoutAnimation {
-                showsWeekPagerOverlay = false
+            if newValue {
+                performWithoutAnimation {
+                    showsWeekPagerOverlay = false
+                }
             }
         }
     }
@@ -447,6 +459,34 @@ private struct HomeCalendar: View {
     }
 
     @ViewBuilder
+    private func transitionMonthGrid(metrics: CalendarLayoutMetrics) -> some View {
+        let weeks = calendar.monthWeeks(containing: displayedMonthStart)
+        let weekCount = max(weeks.count, 1)
+
+        VStack(spacing: 0) {
+            ForEach(Array(weeks.enumerated()), id: \.offset) { index, week in
+                transitionMonthWeekRow(
+                    days: week,
+                    monthStart: displayedMonthStart,
+                    weekIndex: index,
+                    metrics: metrics
+                )
+
+                if index < weeks.count - 1 {
+                    Color.clear
+                        .frame(height: isExpanded ? metrics.weekSpacing : 0)
+                }
+            }
+        }
+        .frame(
+            height: isExpanded
+                ? metrics.monthGridHeight(weekCount: weekCount)
+                : metrics.weekHeight,
+            alignment: .top
+        )
+    }
+
+    @ViewBuilder
     private func monthWeekRow(days: [CalendarDay?], monthStart: Date, metrics: CalendarLayoutMetrics) -> some View {
         HStack(spacing: metrics.daySpacing) {
             ForEach(Array(days.enumerated()), id: \.offset) { _, day in
@@ -475,6 +515,26 @@ private struct HomeCalendar: View {
         }
         .padding(.horizontal, metrics.horizontalInset)
         .frame(height: metrics.weekHeight)
+    }
+
+    @ViewBuilder
+    private func transitionMonthWeekRow(
+        days: [CalendarDay?],
+        monthStart: Date,
+        weekIndex: Int,
+        metrics: CalendarLayoutMetrics
+    ) -> some View {
+        monthWeekRow(days: days, monthStart: monthStart, metrics: metrics)
+            .frame(height: metrics.weekHeight)
+            .frame(
+                height: isExpanded || weekIndex == selectedWeekIndexInDisplayedMonth
+                    ? metrics.weekHeight
+                    : 0,
+                alignment: .top
+            )
+            .clipped()
+            .opacity(isExpanded || weekIndex == selectedWeekIndexInDisplayedMonth ? 1 : 0.001)
+            .accessibilityHidden(!(isExpanded || weekIndex == selectedWeekIndexInDisplayedMonth))
     }
 
     @ViewBuilder
@@ -541,17 +601,20 @@ private struct HomeCalendar: View {
     }
 
     private func syncMonthScrollPageIDWithBinding(animated: Bool = false) {
-        let normalizedBindingPageID = normalizedMonthPageID(visibleMonthPageID) ?? displayedMonthStart
-        guard monthScrollPageID != normalizedBindingPageID else {
+        let targetMonthPageID = isExpanded
+            ? (normalizedMonthPageID(visibleMonthPageID) ?? displayedMonthStart)
+            : displayedMonthStart
+
+        guard monthScrollPageID != targetMonthPageID else {
             return
         }
 
         if animated {
             withAnimation(calendarTransitionAnimation) {
-                monthScrollPageID = normalizedBindingPageID
+                monthScrollPageID = targetMonthPageID
             }
         } else {
-            monthScrollPageID = normalizedBindingPageID
+            monthScrollPageID = targetMonthPageID
         }
     }
 
@@ -588,8 +651,7 @@ private struct HomeCalendar: View {
     private func monthPagerOffset(metrics: CalendarLayoutMetrics) -> CGFloat {
         guard !isExpanded else { return 0 }
 
-        let selectedWeekIndex = calendar.weekIndex(of: selectedDate, inMonthContaining: monthPageStartForAnimation)
-        return -CGFloat(selectedWeekIndex) * (metrics.weekHeight + metrics.weekSpacing)
+        return -CGFloat(selectedWeekIndexInDisplayedMonth) * (metrics.weekHeight + metrics.weekSpacing)
     }
 
     private func updateSettledMonthPageID(_ monthStart: Date, animated: Bool) {

@@ -8,4 +8,4 @@
 - [[memory/knowledge/concepts/simplegym-product-scope|Product Scope: SimpleGym]]
 
 ## Последнее обновление
-- 2026-04-18 21:00 MSK
+- 2026-04-19 15:57 MSK
