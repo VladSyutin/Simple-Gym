@@ -27,15 +27,13 @@ struct HomeScreen: View {
     @State private var visibleWeekPageID: Date? = simpleGymCalendar.startOfWeek(for: Date())
     @State private var transitionDisplayedMonthStart: Date?
     @State private var displayedMonthReleaseWorkItem: DispatchWorkItem?
+    @State private var workoutComment = ""
 
-    private let trainingDates: Set<Date> = Set(
-        [
-            simpleGymCalendar.date(from: DateComponents(year: 2026, month: 4, day: 14)),
-            simpleGymCalendar.date(from: DateComponents(year: 2026, month: 4, day: 16)),
-        ]
-        .compactMap { $0 }
-        .map { simpleGymCalendar.startOfDay(for: $0) }
-    )
+    private let workoutSessionsByDate = HomeScreen.makeWorkoutSessions()
+
+    private var trainingDates: Set<Date> {
+        Set(workoutSessionsByDate.keys)
+    }
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 60)) { context in
@@ -46,6 +44,7 @@ struct HomeScreen: View {
     @ViewBuilder
     private func screenContent(currentDate: Date) -> some View {
         let selectedDate = selectedDate(for: currentDate)
+        let selectedWorkout = workoutSession(for: selectedDate)
         let displayedMonthStart = transitionDisplayedMonthStart ?? resolvedDisplayedMonthStart(for: selectedDate)
         let isCalendarTransitioning = transitionDisplayedMonthStart != nil
 
@@ -58,6 +57,7 @@ struct HomeScreen: View {
                 displayedMonthStart: displayedMonthStart,
                 isTransitioning: isCalendarTransitioning,
                 isExpanded: isCalendarExpanded,
+                sectionTitle: selectedWorkout?.title,
                 trainingDates: trainingDates,
                 onMonthTap: {
                     toggleCalendar(selectedDate: selectedDate)
@@ -78,23 +78,27 @@ struct HomeScreen: View {
                 syncSelectionForVisibleWeek(newValue, currentDate: currentDate)
             }
 
-            Spacer(minLength: Spacing.xxLarge)
+            if let selectedWorkout {
+                workoutContent(for: selectedWorkout)
+            } else {
+                Spacer(minLength: Spacing.xxLarge)
 
-            EmptyStateView(
-                iconSystemName: "dumbbell.fill",
-                title: "Нет тренировок",
-                message: "Добавьте упражнение или программу."
-            )
-            .padding(.horizontal, Spacing.large)
+                EmptyStateView(
+                    iconSystemName: "dumbbell.fill",
+                    title: "Нет тренировок",
+                    message: "Добавьте упражнение или программу."
+                )
+                .padding(.horizontal, Spacing.large)
 
-            Spacer()
+                Spacer()
+            }
         }
         .animation(calendarLayoutTransitionAnimation, value: isCalendarExpanded)
         .background(ColorTokens.backgroundPrimary.ignoresSafeArea())
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
                 LiquidGlassButton(
-                    title: "Добавить тренировку",
+                    title: selectedWorkout == nil ? "Добавить тренировку" : "Добавить упражнение",
                     systemImage: "plus",
                     variant: .tinted
                 ) {}
@@ -117,8 +121,35 @@ struct HomeScreen: View {
         }
     }
 
+    @ViewBuilder
+    private func workoutContent(for workout: HomeWorkoutSession) -> some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            LazyVStack(spacing: 0) {
+                ForEach(workout.exercises) { exercise in
+                    Button {} label: {
+                        SimpleGymRow(
+                            title: exercise.title,
+                            imageName: exercise.imageName
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                SimpleGymTextField(
+                    prompt: "Комментарий",
+                    text: $workoutComment
+                )
+            }
+            .padding(.bottom, Spacing.xxxLarge)
+        }
+    }
+
     private func selectedDate(for currentDate: Date) -> Date {
         simpleGymCalendar.startOfDay(for: userSelectedDate ?? currentDate)
+    }
+
+    private func workoutSession(for date: Date) -> HomeWorkoutSession? {
+        workoutSessionsByDate[simpleGymCalendar.startOfDay(for: date)]
     }
 
     private func resolvedDisplayedMonthStart(for selectedDate: Date) -> Date {
@@ -227,6 +258,39 @@ struct HomeScreen: View {
 
         setSelectedDate(updatedSelection, currentDate: currentDate)
     }
+
+    private static func makeWorkoutSessions() -> [Date: HomeWorkoutSession] {
+        guard let workoutDate = simpleGymCalendar.date(from: DateComponents(year: 2026, month: 4, day: 16)) else {
+            return [:]
+        }
+
+        return [
+            simpleGymCalendar.startOfDay(for: workoutDate): HomeWorkoutSession(
+                title: "Произвольная тренировка",
+                exercises: [
+                    HomeWorkoutExercise(title: "Приседания со штангой", imageName: "WorkoutIllustrationLegs"),
+                    HomeWorkoutExercise(title: "Жим гантелей лёжа\nна наклонной скамье", imageName: "WorkoutIllustrationBreast"),
+                    HomeWorkoutExercise(title: "Вертикальная тяга блока\nшироким хватом к груди", imageName: "WorkoutIllustrationBack"),
+                    HomeWorkoutExercise(title: "Подъём гантелей на бицепс", imageName: "WorkoutIllustrationArms"),
+                    HomeWorkoutExercise(title: "Разведение гантелей в стороны", imageName: "WorkoutIllustrationShoulders"),
+                    HomeWorkoutExercise(title: "Подъём ног к груди в висе", imageName: "WorkoutIllustrationPress"),
+                    HomeWorkoutExercise(title: "Беговая дорожка", imageName: "WorkoutIllustrationCardio"),
+                ]
+            )
+        ]
+    }
+}
+
+private struct HomeWorkoutSession {
+    let title: String
+    let exercises: [HomeWorkoutExercise]
+}
+
+private struct HomeWorkoutExercise: Identifiable {
+    let title: String
+    let imageName: String
+
+    var id: String { title }
 }
 
 private struct HomeCalendar: View {
@@ -241,6 +305,7 @@ private struct HomeCalendar: View {
     let displayedMonthStart: Date
     let isTransitioning: Bool
     let isExpanded: Bool
+    let sectionTitle: String?
     let trainingDates: Set<Date>
     let onMonthTap: () -> Void
     let onTodayTap: () -> Void
@@ -325,7 +390,9 @@ private struct HomeCalendar: View {
                 .frame(height: visibleWeeksHeight, alignment: .top)
                 .clipped()
 
-                HomeSectionHeader(title: "Тренировки")
+                if let sectionTitle {
+                    HomeSectionHeader(title: sectionTitle)
+                }
             }
             .scrollChromeSurface()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -359,7 +426,8 @@ private struct HomeCalendar: View {
         let weeksHeight = isExpanded
             ? metrics.monthGridHeight(weekCount: presentedExpandedWeekCount)
             : metrics.weekHeight
-        return metrics.monthRowHeight + metrics.weekdayRowHeight + weeksHeight + metrics.sectionHeaderHeight
+        let sectionHeaderHeight = sectionTitle == nil ? 0 : metrics.sectionHeaderHeight
+        return metrics.monthRowHeight + metrics.weekdayRowHeight + weeksHeight + sectionHeaderHeight
     }
 
     @ViewBuilder
@@ -671,7 +739,7 @@ private struct HomeCalendar: View {
 }
 
 private struct HomeSectionHeader: View {
-    let title: LocalizedStringKey
+    let title: String
 
     private enum Metrics {
         static let height: CGFloat = 56
@@ -684,12 +752,14 @@ private struct HomeSectionHeader: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Menu {
-                Button("Посмотреть статистику", systemImage: "chart.xyaxis.line") {}
-                Button("Удалить упражнение", systemImage: "trash", role: .destructive) {}
+                Button("Копировать на сегодня", systemImage: "doc.on.doc") {}
+                Button("Сохранить как программу", systemImage: "bookmark") {}
+                Button("Удалить тренировку", systemImage: "trash", role: .destructive) {}
             } label: {
                 LiquidGlassSymbolLabel(systemImage: "ellipsis")
             }
             .buttonStyle(.plain)
+            .tint(nil)
             .accessibilityLabel("Дополнительные действия")
         }
         .padding(.horizontal, Spacing.small)

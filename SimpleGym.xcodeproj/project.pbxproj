@@ -13,20 +13,24 @@
 		50B5ACFDBC97418BE7886ECB /* SimpleGymRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF9A42A06926DAD360DD06DE /* SimpleGymRootView.swift */; };
 		6CE8A848B5348110452AAD2E /* ColorTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF2248D053C3C83896DF6A1 /* ColorTokens.swift */; };
 		7B909A7EA81665D3A2794E10 /* Radius.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AA2DACC4E77C9EC95B14635 /* Radius.swift */; };
+		8B70C16B411BFE467D7C9681 /* SimpleGymRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F746A96D6DCBB6AE63F0E1A /* SimpleGymRow.swift */; };
 		9C1360A0F71E1119EF7920AD /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 939536601713B21A62DED900 /* EmptyStateView.swift */; };
 		C34F59A4BD2AE90AB0C435B5 /* TextStyleModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C9EC35B9940D082040E129B /* TextStyleModifier.swift */; };
 		C6C8D675155D641A5A30E49F /* SimpleGymApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB822A65C3FD2502312EDF0C /* SimpleGymApp.swift */; };
 		C808CC219A1C14AF9B9970B5 /* LiquidGlassButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8D49C63EA483A20A87B9B39 /* LiquidGlassButton.swift */; };
 		C9315D6D70E7909B4ABAA9D0 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37FF7E8E9975F6A6A0303D15 /* Typography.swift */; };
 		CEE9564B17CF82252B4D469D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D919FB5F14344D5FDD6CE336 /* Assets.xcassets */; };
+		D1B689B9A90E8425C9C56DD4 /* SimpleGymTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32B5082B5B6F8489270250A6 /* SimpleGymTextField.swift */; };
 		D2BB53ED086DCDE9F57B0C87 /* MaterialTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11823809A397DCC29A53F7F3 /* MaterialTokens.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		11823809A397DCC29A53F7F3 /* MaterialTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialTokens.swift; sourceTree = "<group>"; };
+		32B5082B5B6F8489270250A6 /* SimpleGymTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymTextField.swift; sourceTree = "<group>"; };
 		37FF7E8E9975F6A6A0303D15 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		5AA2DACC4E77C9EC95B14635 /* Radius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radius.swift; sourceTree = "<group>"; };
 		72F3AE00F372059660317E17 /* ScrollChromeSurfaceModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollChromeSurfaceModifier.swift; sourceTree = "<group>"; };
+		7F746A96D6DCBB6AE63F0E1A /* SimpleGymRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymRow.swift; sourceTree = "<group>"; };
 		939536601713B21A62DED900 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		9C9EC35B9940D082040E129B /* TextStyleModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextStyleModifier.swift; sourceTree = "<group>"; };
 		AFE054EA6C902305A88C5333 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
@@ -86,6 +90,8 @@
 			children = (
 				939536601713B21A62DED900 /* EmptyStateView.swift */,
 				F8D49C63EA483A20A87B9B39 /* LiquidGlassButton.swift */,
+				7F746A96D6DCBB6AE63F0E1A /* SimpleGymRow.swift */,
+				32B5082B5B6F8489270250A6 /* SimpleGymTextField.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -235,6 +241,8 @@
 				0CE71AADA55DE730C9428EB9 /* ScrollChromeSurfaceModifier.swift in Sources */,
 				C6C8D675155D641A5A30E49F /* SimpleGymApp.swift in Sources */,
 				50B5ACFDBC97418BE7886ECB /* SimpleGymRootView.swift in Sources */,
+				8B70C16B411BFE467D7C9681 /* SimpleGymRow.swift in Sources */,
+				D1B689B9A90E8425C9C56DD4 /* SimpleGymTextField.swift in Sources */,
 				299873677E9E863ECD6DD9F7 /* Spacing.swift in Sources */,
 				C34F59A4BD2AE90AB0C435B5 /* TextStyleModifier.swift in Sources */,
 				C9315D6D70E7909B4ABAA9D0 /* Typography.swift in Sources */,

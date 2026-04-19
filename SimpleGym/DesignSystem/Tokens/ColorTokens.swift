@@ -10,6 +10,7 @@ enum ColorTokens {
     }
 
     static let accentBlue = Color(red: 0 / 255, green: 136 / 255, blue: 255 / 255)
+    static let accentRed = Color(uiColor: .systemRed)
     static let accentBlueSelectionBackground = dynamicColor(
         light: UIColor(red: 214 / 255, green: 236 / 255, blue: 255 / 255, alpha: 1),
         dark: UIColor(red: 0 / 255, green: 136 / 255, blue: 255 / 255, alpha: 0.12)
@@ -23,5 +24,9 @@ enum ColorTokens {
         dark: UIColor.label
     )
     static let separator = Color(uiColor: .separator)
+    static let separatorVibrant = dynamicColor(
+        light: UIColor(red: 230 / 255, green: 230 / 255, blue: 230 / 255, alpha: 1),
+        dark: UIColor.separator.withAlphaComponent(0.6)
+    )
     static let white = Color.white
 }

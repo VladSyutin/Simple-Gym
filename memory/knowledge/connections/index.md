@@ -6,4 +6,4 @@
 - [[memory/knowledge/connections/figma-reference-to-native-ios-execution|Figma Reference ↔ Native iOS Execution]]
 
 ## Последнее обновление
-- 2026-04-19 15:57 MSK
+- 2026-04-19 16:43 MSK
