@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 private let simpleGymCalendar: Calendar = {
     var calendar = Calendar(identifier: .gregorian)
@@ -28,6 +29,7 @@ struct HomeScreen: View {
     @State private var transitionDisplayedMonthStart: Date?
     @State private var displayedMonthReleaseWorkItem: DispatchWorkItem?
     @State private var workoutComment = ""
+    @FocusState private var isCommentFieldFocused: Bool
 
     private let workoutSessionsByDate = HomeScreen.makeWorkoutSessions()
 
@@ -100,7 +102,7 @@ struct HomeScreen: View {
                 LiquidGlassButton(
                     title: selectedWorkout == nil ? "Добавить тренировку" : "Добавить упражнение",
                     systemImage: "plus",
-                    variant: .tinted
+                    variant: selectedWorkout == nil ? .tinted : .clear
                 ) {}
                 .padding(.horizontal, Spacing.xLarge)
                 .padding(.top, Spacing.large)
@@ -124,24 +126,63 @@ struct HomeScreen: View {
     @ViewBuilder
     private func workoutContent(for workout: HomeWorkoutSession) -> some View {
         ScrollView(.vertical, showsIndicators: false) {
-            LazyVStack(spacing: 0) {
-                ForEach(workout.exercises) { exercise in
-                    Button {} label: {
-                        SimpleGymRow(
-                            title: exercise.title,
-                            imageName: exercise.imageName
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
+            VStack(spacing: 0) {
+                HomeWorkoutExerciseList(
+                    exercises: workout.exercises,
+                    swipeActions: exerciseRowSwipeActions
+                )
+                .frame(maxWidth: .infinity)
+                .frame(height: HomeWorkoutExerciseList.height(for: workout.exercises))
 
                 SimpleGymTextField(
                     prompt: "Комментарий",
-                    text: $workoutComment
+                    text: $workoutComment,
+                    isFocused: $isCommentFieldFocused
                 )
             }
+            .frame(maxWidth: .infinity, alignment: .top)
             .padding(.bottom, Spacing.xxxLarge)
         }
+        .scrollIndicators(.hidden)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+
+                Button {
+                    isCommentFieldFocused = false
+                } label: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .symbolRenderingMode(.hierarchical)
+                        .font(.title3)
+                }
+                .tint(.accentColor)
+                .accessibilityLabel("Скрыть клавиатуру")
+            }
+        }
+    }
+
+    private var exerciseRowSwipeActions: [SimpleGymRowSwipeAction] {
+        [
+            SimpleGymRowSwipeAction(
+                title: "Статистика",
+                systemImage: "chart.xyaxis.line",
+                tint: ColorTokens.accentOrange,
+                symbolPointSize: 17
+            ) {},
+            SimpleGymRowSwipeAction(
+                title: "Редактировать",
+                systemImage: "pencil.line",
+                tint: ColorTokens.accentGray,
+                symbolPointSize: 18
+            ) {},
+            SimpleGymRowSwipeAction(
+                title: "Удалить",
+                systemImage: "trash",
+                tint: ColorTokens.accentRed,
+                role: .destructive,
+                symbolPointSize: 18
+            ) {}
+        ]
     }
 
     private func selectedDate(for currentDate: Date) -> Date {
@@ -286,11 +327,250 @@ private struct HomeWorkoutSession {
     let exercises: [HomeWorkoutExercise]
 }
 
-private struct HomeWorkoutExercise: Identifiable {
+struct HomeWorkoutExercise: Identifiable {
     let title: String
     let imageName: String
 
     var id: String { title }
+}
+
+private struct HomeWorkoutExerciseList: UIViewRepresentable {
+    let exercises: [HomeWorkoutExercise]
+    let swipeActions: [SimpleGymRowSwipeAction]
+
+    static func height(for exercises: [HomeWorkoutExercise]) -> CGFloat {
+        CGFloat(exercises.count) * SimpleGymRow.height
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeUIView(context: Context) -> UITableView {
+        let tableView = UITableView(frame: .zero, style: .plain)
+        tableView.dataSource = context.coordinator
+        tableView.delegate = context.coordinator
+        tableView.register(HomeWorkoutExerciseCell.self, forCellReuseIdentifier: Coordinator.reuseIdentifier)
+        tableView.backgroundColor = .clear
+        tableView.separatorStyle = .none
+        tableView.isScrollEnabled = false
+        tableView.showsVerticalScrollIndicator = false
+        tableView.showsHorizontalScrollIndicator = false
+        tableView.rowHeight = SimpleGymRow.height
+        tableView.estimatedRowHeight = SimpleGymRow.height
+        tableView.contentInset = .zero
+        tableView.layoutMargins = .zero
+        tableView.cellLayoutMarginsFollowReadableWidth = false
+
+        if #available(iOS 15.0, *) {
+            tableView.fillerRowHeight = 0
+            tableView.sectionHeaderTopPadding = 0
+        }
+
+        return tableView
+    }
+
+    func updateUIView(_ tableView: UITableView, context: Context) {
+        context.coordinator.parent = self
+        tableView.reloadData()
+    }
+}
+
+extension HomeWorkoutExerciseList {
+    final class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate {
+        static let reuseIdentifier = "HomeWorkoutExerciseCell"
+
+        var parent: HomeWorkoutExerciseList
+
+        init(parent: HomeWorkoutExerciseList) {
+            self.parent = parent
+        }
+
+        func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+            parent.exercises.count
+        }
+
+        func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+            guard let cell = tableView.dequeueReusableCell(
+                withIdentifier: Self.reuseIdentifier,
+                for: indexPath
+            ) as? HomeWorkoutExerciseCell else {
+                return UITableViewCell()
+            }
+            let exercise = parent.exercises[indexPath.row]
+
+            cell.configure(with: exercise)
+            return cell
+        }
+
+        func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+            SimpleGymRow.height
+        }
+
+        func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+            tableView.deselectRow(at: indexPath, animated: true)
+        }
+
+        func tableView(
+            _ tableView: UITableView,
+            trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
+        ) -> UISwipeActionsConfiguration? {
+            let actions = parent.swipeActions.map { swipeAction in
+                let style: UIContextualAction.Style = swipeAction.role == .destructive ? .destructive : .normal
+                let action = UIContextualAction(style: style, title: nil) { _, _, completion in
+                    swipeAction.action()
+                    completion(true)
+                }
+
+                action.backgroundColor = .clear
+                action.image = HomeWorkoutExerciseSwipeActionImage.make(for: swipeAction)
+
+                return action
+            }
+
+            let configuration = UISwipeActionsConfiguration(actions: actions)
+            configuration.performsFirstActionWithFullSwipe = false
+            return configuration
+        }
+    }
+}
+
+private final class HomeWorkoutExerciseCell: UITableViewCell {
+    private static let maximumSwipeRevealWidth: CGFloat = 180
+
+    private var exercise: HomeWorkoutExercise?
+    private var swipeRevealProgress: CGFloat = 0
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+
+        selectionStyle = .none
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+        layoutMargins = .zero
+        preservesSuperviewLayoutMargins = false
+        separatorInset = .zero
+        backgroundView = HomeWorkoutExerciseSwipeBackgroundView(
+            fillColor: UIColor(ColorTokens.backgroundSecondary)
+        )
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func configure(with exercise: HomeWorkoutExercise) {
+        self.exercise = exercise
+        applyContentConfiguration()
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        exercise = nil
+        swipeRevealProgress = 0
+        contentConfiguration = nil
+    }
+
+    override func setEditing(_ editing: Bool, animated: Bool) {
+        super.setEditing(editing, animated: animated)
+        setNeedsLayout()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        let revealWidth = max(0, bounds.width - contentView.frame.maxX)
+        let progress = max(0, min(1, revealWidth / Self.maximumSwipeRevealWidth))
+
+        guard abs(progress - swipeRevealProgress) > 0.001 else { return }
+
+        swipeRevealProgress = progress
+        applyContentConfiguration()
+    }
+
+    private func applyContentConfiguration() {
+        guard let exercise else { return }
+
+        contentConfiguration = UIHostingConfiguration {
+            SimpleGymRow(
+                title: exercise.title,
+                imageName: exercise.imageName,
+                swipeRevealProgress: swipeRevealProgress
+            )
+        }
+        .margins(.all, 0)
+    }
+}
+
+private enum HomeWorkoutExerciseSwipeActionImage {
+    private static let buttonDiameter: CGFloat = 50
+    private static let buttonHorizontalInset: CGFloat = 5
+    private static let canvasSize = CGSize(
+        width: buttonDiameter + buttonHorizontalInset * 2,
+        height: buttonDiameter
+    )
+
+    static func make(for swipeAction: SimpleGymRowSwipeAction) -> UIImage? {
+        let renderer = UIGraphicsImageRenderer(size: canvasSize)
+        let circleRect = CGRect(
+            x: buttonHorizontalInset,
+            y: 0,
+            width: buttonDiameter,
+            height: buttonDiameter
+        )
+        let symbolConfiguration = UIImage.SymbolConfiguration(
+            pointSize: swipeAction.symbolPointSize,
+            weight: .regular
+        )
+        let symbolImage = UIImage(
+            systemName: swipeAction.systemImage,
+            withConfiguration: symbolConfiguration
+        )?.withTintColor(.white, renderingMode: .alwaysOriginal)
+
+        return renderer.image { _ in
+            let circlePath = UIBezierPath(ovalIn: circleRect)
+            UIColor(swipeAction.tint).setFill()
+            circlePath.fill()
+
+            guard let symbolImage else { return }
+
+            let symbolRect = CGRect(
+                x: circleRect.midX - symbolImage.size.width / 2,
+                y: circleRect.midY - symbolImage.size.height / 2,
+                width: symbolImage.size.width,
+                height: symbolImage.size.height
+            )
+            symbolImage.draw(in: symbolRect)
+        }
+        .withRenderingMode(.alwaysOriginal)
+    }
+}
+
+private final class HomeWorkoutExerciseSwipeBackgroundView: UIView {
+    var fillColor: UIColor {
+        didSet {
+            backgroundColor = fillColor
+        }
+    }
+
+    init(fillColor: UIColor) {
+        self.fillColor = fillColor
+        super.init(frame: .zero)
+        backgroundColor = fillColor
+        isUserInteractionEnabled = false
+        layer.cornerCurve = .continuous
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        layer.cornerRadius = bounds.height / 2
+    }
 }
 
 private struct HomeCalendar: View {

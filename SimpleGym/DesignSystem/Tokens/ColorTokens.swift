@@ -10,12 +10,18 @@ enum ColorTokens {
     }
 
     static let accentBlue = Color(red: 0 / 255, green: 136 / 255, blue: 255 / 255)
+    static let accentOrange = Color(red: 1, green: 141 / 255, blue: 40 / 255)
+    static let accentGray = Color(uiColor: .systemGray)
     static let accentRed = Color(uiColor: .systemRed)
     static let accentBlueSelectionBackground = dynamicColor(
         light: UIColor(red: 214 / 255, green: 236 / 255, blue: 255 / 255, alpha: 1),
         dark: UIColor(red: 0 / 255, green: 136 / 255, blue: 255 / 255, alpha: 0.12)
     )
     static let backgroundPrimary = Color(uiColor: .systemBackground)
+    static let backgroundSecondary = dynamicColor(
+        light: UIColor(red: 229 / 255, green: 229 / 255, blue: 234 / 255, alpha: 1),
+        dark: UIColor.secondarySystemBackground
+    )
     static let labelPrimary = Color(uiColor: .label)
     static let labelSecondary = Color(uiColor: .secondaryLabel)
     static let labelTertiary = Color(uiColor: .tertiaryLabel)
