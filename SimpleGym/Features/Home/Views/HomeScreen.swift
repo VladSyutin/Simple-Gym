@@ -330,7 +330,9 @@ private struct HomeCalendar: View {
             syncMonthScrollPageIDWithBinding()
         }
         .onChange(of: visibleMonthPageID) { _, _ in
-            syncMonthScrollPageIDWithBinding(animated: true)
+            // Boundary weeks can be rendered by either adjacent month page in collapsed mode.
+            // Animating that page swap makes a simple date tap look like an unintended scroll.
+            syncMonthScrollPageIDWithBinding(animated: isExpanded)
         }
         .onChange(of: isExpanded) { _, newValue in
             guard newValue else { return }
