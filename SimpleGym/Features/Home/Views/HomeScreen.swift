@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 private let simpleGymCalendar: Calendar = {
     var calendar = Calendar(identifier: .gregorian)
@@ -144,20 +143,9 @@ struct HomeScreen: View {
             .padding(.bottom, Spacing.xxxLarge)
         }
         .scrollIndicators(.hidden)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-
-                Button {
-                    isCommentFieldFocused = false
-                } label: {
-                    Image(systemName: "checkmark.circle.fill")
-                        .symbolRenderingMode(.hierarchical)
-                        .font(.title3)
-                }
-                .tint(.accentColor)
-                .accessibilityLabel("Скрыть клавиатуру")
-            }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            isCommentFieldFocused = false
         }
     }
 
