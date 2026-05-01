@@ -11,8 +11,6 @@ struct SimpleGymRowSwipeAction: Identifiable {
 }
 
 struct SimpleGymRow: View {
-    @Environment(\.colorScheme) private var colorScheme
-
     let title: String
     var detail: String? = nil
     var imageName: String? = nil
@@ -28,28 +26,11 @@ struct SimpleGymRow: View {
         static let accessorySpacing: CGFloat = 16
         static let titleSpacing: CGFloat = 8
         static let reorderInset: CGFloat = 12
-        static let liftedShadowRadius: CGFloat = 16
         static let disclosureIndicatorSize: CGFloat = 14
         static let reorderHandleSize: CGFloat = 15
     }
 
     static let height: CGFloat = Metrics.height
-
-    private var backgroundShape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: Radius.pill, style: .continuous)
-    }
-
-    private var backgroundFillColor: Color {
-        let interfaceStyle: UIUserInterfaceStyle = colorScheme == .dark ? .dark : .light
-        let traitCollection = UITraitCollection(userInterfaceStyle: interfaceStyle)
-        let primaryColor = UIColor(ColorTokens.backgroundPrimary).resolvedColor(with: traitCollection)
-        let secondaryColor = UIColor(ColorTokens.backgroundSecondary).resolvedColor(with: traitCollection)
-        let clampedProgress = max(0, min(1, swipeRevealProgress))
-
-        return Color(
-            uiColor: primaryColor.mixed(with: secondaryColor, progress: clampedProgress)
-        )
-    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -106,17 +87,7 @@ struct SimpleGymRow: View {
         .padding(.horizontal, Spacing.small)
         .frame(minHeight: Metrics.height)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            backgroundShape
-                .fill(backgroundFillColor)
-                .opacity(1)
-                .shadow(
-                    color: isLifted ? Color.black.opacity(0.2) : .clear,
-                    radius: isLifted ? Metrics.liftedShadowRadius : 0
-                )
-        }
-        .clipShape(backgroundShape)
-        .contentShape(backgroundShape)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 }
@@ -166,38 +137,5 @@ struct SimpleGymRow: View {
             swipeRevealProgress: 1
         )
         .padding(Spacing.small)
-    }
-}
-
-private extension UIColor {
-    func mixed(with color: UIColor, progress: CGFloat) -> UIColor {
-        let clampedProgress = max(0, min(1, progress))
-        let source = rgbaComponents
-        let destination = color.rgbaComponents
-
-        return UIColor(
-            red: source.red + (destination.red - source.red) * clampedProgress,
-            green: source.green + (destination.green - source.green) * clampedProgress,
-            blue: source.blue + (destination.blue - source.blue) * clampedProgress,
-            alpha: source.alpha + (destination.alpha - source.alpha) * clampedProgress
-        )
-    }
-
-    private var rgbaComponents: (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat) {
-        var red: CGFloat = 0
-        var green: CGFloat = 0
-        var blue: CGFloat = 0
-        var alpha: CGFloat = 0
-
-        if getRed(&red, green: &green, blue: &blue, alpha: &alpha) {
-            return (red, green, blue, alpha)
-        }
-
-        var white: CGFloat = 0
-        if getWhite(&white, alpha: &alpha) {
-            return (white, white, white, alpha)
-        }
-
-        return (0, 0, 0, 0)
     }
 }

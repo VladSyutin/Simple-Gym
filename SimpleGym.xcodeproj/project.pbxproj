@@ -8,7 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		0CE71AADA55DE730C9428EB9 /* ScrollChromeSurfaceModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F3AE00F372059660317E17 /* ScrollChromeSurfaceModifier.swift */; };
+		11A16939AF04F685D786C6B3 /* AddWorkoutSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E943F382FC8CF93A4CF77D9 /* AddWorkoutSheet.swift */; };
 		299873677E9E863ECD6DD9F7 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE054EA6C902305A88C5333 /* Spacing.swift */; };
+		2D6C872F51D9927A8D7D4478 /* AddExerciseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F24DA76FB7B7D113D43E971 /* AddExerciseSheet.swift */; };
 		42E0DFF960036FD38677DF47 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAF498DE471659F8593B28E /* HomeScreen.swift */; };
 		50B5ACFDBC97418BE7886ECB /* SimpleGymRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF9A42A06926DAD360DD06DE /* SimpleGymRootView.swift */; };
 		6CE8A848B5348110452AAD2E /* ColorTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF2248D053C3C83896DF6A1 /* ColorTokens.swift */; };
@@ -25,16 +27,18 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0E943F382FC8CF93A4CF77D9 /* AddWorkoutSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddWorkoutSheet.swift; sourceTree = "<group>"; };
 		11823809A397DCC29A53F7F3 /* MaterialTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialTokens.swift; sourceTree = "<group>"; };
 		32B5082B5B6F8489270250A6 /* SimpleGymTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymTextField.swift; sourceTree = "<group>"; };
 		37FF7E8E9975F6A6A0303D15 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		5AA2DACC4E77C9EC95B14635 /* Radius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radius.swift; sourceTree = "<group>"; };
 		72F3AE00F372059660317E17 /* ScrollChromeSurfaceModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollChromeSurfaceModifier.swift; sourceTree = "<group>"; };
+		7F24DA76FB7B7D113D43E971 /* AddExerciseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddExerciseSheet.swift; sourceTree = "<group>"; };
 		7F746A96D6DCBB6AE63F0E1A /* SimpleGymRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymRow.swift; sourceTree = "<group>"; };
 		939536601713B21A62DED900 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		9C9EC35B9940D082040E129B /* TextStyleModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextStyleModifier.swift; sourceTree = "<group>"; };
 		AFE054EA6C902305A88C5333 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
-		B4C2AA60ADADC98402B39FB3 /* SimpleGym.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimpleGym.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B4C2AA60ADADC98402B39FB3 /* SimpleGym.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SimpleGym.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BFF2248D053C3C83896DF6A1 /* ColorTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTokens.swift; sourceTree = "<group>"; };
 		D919FB5F14344D5FDD6CE336 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DAAF498DE471659F8593B28E /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
@@ -48,16 +52,8 @@
 			isa = PBXGroup;
 			children = (
 				6209E3516FA2681FF1ABED26 /* Home */,
-				174DE9816168F73DD96CE6C8 /* Playground */,
 			);
 			path = Features;
-			sourceTree = "<group>";
-		};
-		174DE9816168F73DD96CE6C8 /* Playground */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Playground;
 			sourceTree = "<group>";
 		};
 		2439B87983ABC73A7D592A85 /* Root */ = {
@@ -71,6 +67,8 @@
 		25962576CD148E01EF8793EE /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				7F24DA76FB7B7D113D43E971 /* AddExerciseSheet.swift */,
+				0E943F382FC8CF93A4CF77D9 /* AddWorkoutSheet.swift */,
 				DAAF498DE471659F8593B28E /* HomeScreen.swift */,
 			);
 			path = Views;
@@ -193,6 +191,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					5386AC8C7C554F18B54846DE = {
+						DevelopmentTeam = 92U4877ZD3;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -232,6 +231,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2D6C872F51D9927A8D7D4478 /* AddExerciseSheet.swift in Sources */,
+				11A16939AF04F685D786C6B3 /* AddWorkoutSheet.swift in Sources */,
 				6CE8A848B5348110452AAD2E /* ColorTokens.swift in Sources */,
 				9C1360A0F71E1119EF7920AD /* EmptyStateView.swift in Sources */,
 				42E0DFF960036FD38677DF47 /* HomeScreen.swift in Sources */,

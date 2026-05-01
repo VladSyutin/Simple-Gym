@@ -20,6 +20,20 @@ private let calendarLayoutTransitionAnimation = Animation.timingCurve(0.2, 0.88,
 private let calendarRowCountAnimation = Animation.timingCurve(0.2, 0.88, 0.24, 1, duration: 0.36)
 private let calendarTransitionSettleDuration: TimeInterval = 0.46
 
+private enum HomeSheetDestination: Identifiable {
+    case addWorkout
+    case addExercise
+
+    var id: String {
+        switch self {
+        case .addWorkout:
+            return "addWorkout"
+        case .addExercise:
+            return "addExercise"
+        }
+    }
+}
+
 struct HomeScreen: View {
     @State private var isCalendarExpanded = false
     @State private var userSelectedDate: Date?
@@ -27,6 +41,7 @@ struct HomeScreen: View {
     @State private var visibleWeekPageID: Date? = simpleGymCalendar.startOfWeek(for: Date())
     @State private var transitionDisplayedMonthStart: Date?
     @State private var displayedMonthReleaseWorkItem: DispatchWorkItem?
+    @State private var activeSheet: HomeSheetDestination?
     @State private var workoutComment = ""
     @FocusState private var isCommentFieldFocused: Bool
 
@@ -102,7 +117,9 @@ struct HomeScreen: View {
                     title: selectedWorkout == nil ? "Добавить тренировку" : "Добавить упражнение",
                     systemImage: "plus",
                     variant: selectedWorkout == nil ? .tinted : .clear
-                ) {}
+                ) {
+                    activeSheet = selectedWorkout == nil ? .addWorkout : .addExercise
+                }
                 .padding(.horizontal, Spacing.xLarge)
                 .padding(.top, Spacing.large)
                 .padding(.bottom, Spacing.xxSmall)
@@ -118,6 +135,22 @@ struct HomeScreen: View {
                     endPoint: .bottom
                 )
                 .ignoresSafeArea(edges: .bottom)
+            }
+        }
+        .sheet(item: $activeSheet) { destination in
+            switch destination {
+            case .addWorkout:
+                AddWorkoutSheet()
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.hidden)
+                    .presentationCornerRadius(38)
+                    .presentationBackground(ColorTokens.backgroundPrimary)
+            case .addExercise:
+                AddExerciseSheet()
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.hidden)
+                    .presentationCornerRadius(38)
+                    .presentationBackground(ColorTokens.backgroundPrimary)
             }
         }
     }
@@ -438,9 +471,7 @@ private final class HomeWorkoutExerciseCell: UITableViewCell {
         layoutMargins = .zero
         preservesSuperviewLayoutMargins = false
         separatorInset = .zero
-        backgroundView = HomeWorkoutExerciseSwipeBackgroundView(
-            fillColor: UIColor(ColorTokens.backgroundSecondary)
-        )
+        backgroundView = nil
     }
 
     @available(*, unavailable)
@@ -532,32 +563,6 @@ private enum HomeWorkoutExerciseSwipeActionImage {
             symbolImage.draw(in: symbolRect)
         }
         .withRenderingMode(.alwaysOriginal)
-    }
-}
-
-private final class HomeWorkoutExerciseSwipeBackgroundView: UIView {
-    var fillColor: UIColor {
-        didSet {
-            backgroundColor = fillColor
-        }
-    }
-
-    init(fillColor: UIColor) {
-        self.fillColor = fillColor
-        super.init(frame: .zero)
-        backgroundColor = fillColor
-        isUserInteractionEnabled = false
-        layer.cornerCurve = .continuous
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        layer.cornerRadius = bounds.height / 2
     }
 }
 
