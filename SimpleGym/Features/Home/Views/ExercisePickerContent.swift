@@ -24,7 +24,7 @@ struct ExercisePickerContent: View {
     @Environment(\.dismiss) private var dismiss
 
     let sheetTitle: String
-    let topAccessory: AnyView?
+    @Binding var showsTopAccessory: Bool
     let reservedTopAccessoryHeight: CGFloat
 
     @State private var selectedCategoryID: String?
@@ -36,11 +36,11 @@ struct ExercisePickerContent: View {
     init(
         sheetTitle: String,
         initialExercises: [HomeWorkoutExercise] = [],
-        topAccessory: AnyView? = nil,
+        showsTopAccessory: Binding<Bool> = .constant(true),
         reservedTopAccessoryHeight: CGFloat = 0
     ) {
         self.sheetTitle = sheetTitle
-        self.topAccessory = topAccessory
+        self._showsTopAccessory = showsTopAccessory
         self.reservedTopAccessoryHeight = reservedTopAccessoryHeight
         _selectedExercisesByCategoryID = State(
             initialValue: Self.makeInitialSelections(from: initialExercises)
@@ -59,14 +59,6 @@ struct ExercisePickerContent: View {
         VStack(spacing: 0) {
             grabber
             toolbar
-
-            if let topAccessory {
-                topAccessory
-            } else if reservedTopAccessoryHeight > 0 {
-                Color.clear
-                    .frame(height: reservedTopAccessoryHeight)
-                    .accessibilityHidden(true)
-            }
 
             ZStack {
                 if let selectedCategory {
@@ -159,6 +151,7 @@ struct ExercisePickerContent: View {
                 ) {
                     navigationDirection = .backward
                     withAnimation(.easeInOut(duration: 0.28)) {
+                        showsTopAccessory = true
                         selectedCategoryID = nil
                     }
                 }
@@ -192,27 +185,36 @@ struct ExercisePickerContent: View {
     }
 
     private var categoryPane: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            LazyVStack(spacing: 0) {
-                ForEach(categories) { category in
-                    Button {
-                        navigationDirection = .forward
-                        withAnimation(.easeInOut(duration: 0.28)) {
-                            selectedCategoryID = category.id
+        VStack(spacing: 0) {
+            if showsTopAccessory, reservedTopAccessoryHeight > 0 {
+                Color.clear
+                    .frame(height: reservedTopAccessoryHeight)
+                    .accessibilityHidden(true)
+            }
+
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVStack(spacing: 0) {
+                    ForEach(categories) { category in
+                        Button {
+                            navigationDirection = .forward
+                            withAnimation(.easeInOut(duration: 0.28)) {
+                                showsTopAccessory = false
+                                selectedCategoryID = category.id
+                            }
+                        } label: {
+                            SimpleGymRow(
+                                title: category.title,
+                                detail: selectionDetail(for: category),
+                                imageName: category.imageName
+                            )
                         }
-                    } label: {
-                        SimpleGymRow(
-                            title: category.title,
-                            detail: selectionDetail(for: category),
-                            imageName: category.imageName
-                        )
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
+            .scrollIndicators(.hidden)
             .padding(.bottom, Spacing.xxLarge)
         }
-        .scrollIndicators(.hidden)
     }
 
     @ViewBuilder

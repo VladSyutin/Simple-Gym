@@ -19,6 +19,7 @@ private enum AddWorkoutSheetTab: String, CaseIterable, Identifiable {
 struct AddWorkoutSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTab: AddWorkoutSheetTab = .exercises
+    @State private var showsExerciseTabSwitcher = true
 
     private enum Metrics {
         static let externalSegmentedTopInset: CGFloat = 78
@@ -32,6 +33,7 @@ struct AddWorkoutSheet: View {
                 case .exercises:
                     ExercisePickerContent(
                         sheetTitle: "Добавление тренировки",
+                        showsTopAccessory: $showsExerciseTabSwitcher,
                         reservedTopAccessoryHeight: Metrics.externalSegmentedReservedHeight
                     )
                 case .programs:
@@ -47,11 +49,20 @@ struct AddWorkoutSheet: View {
                 }
             }
 
-            segmentedControl
-                .padding(.top, Metrics.externalSegmentedTopInset)
+            if shouldShowSegmentedControl {
+                segmentedControl
+                    .padding(.top, Metrics.externalSegmentedTopInset)
+                    .transition(
+                        .asymmetric(
+                            insertion: .move(edge: .leading),
+                            removal: .move(edge: .leading)
+                        )
+                    )
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(ColorTokens.backgroundPrimary)
+        .animation(.easeInOut(duration: 0.28), value: shouldShowSegmentedControl)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if selectedTab == .programs {
                 VStack(spacing: 0) {
@@ -78,6 +89,15 @@ struct AddWorkoutSheet: View {
                 }
             }
         }
+        .onChange(of: selectedTab) { _, newValue in
+            if newValue == .programs {
+                showsExerciseTabSwitcher = true
+            }
+        }
+    }
+
+    private var shouldShowSegmentedControl: Bool {
+        selectedTab == .programs || showsExerciseTabSwitcher
     }
 
     private var grabber: some View {
@@ -119,6 +139,7 @@ struct AddWorkoutSheet: View {
         }
         .pickerStyle(.segmented)
         .padding(.horizontal, Spacing.small)
+        .frame(height: Metrics.externalSegmentedReservedHeight)
     }
 
     private var programsEmptyState: some View {
