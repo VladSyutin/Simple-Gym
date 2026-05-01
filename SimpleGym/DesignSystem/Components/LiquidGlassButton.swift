@@ -50,8 +50,23 @@ struct LiquidGlassButton: View {
     }
 }
 
+enum LiquidGlassSymbolButtonVariant {
+    case clear
+    case tinted
+
+    var foregroundColor: Color {
+        switch self {
+        case .clear:
+            return ColorTokens.labelVibrantControlPrimary
+        case .tinted:
+            return ColorTokens.white
+        }
+    }
+}
+
 struct LiquidGlassSymbolLabel: View {
     let systemImage: String
+    var variant: LiquidGlassSymbolButtonVariant = .clear
 
     private enum Metrics {
         static let controlSize: CGFloat = 48
@@ -60,22 +75,28 @@ struct LiquidGlassSymbolLabel: View {
     var body: some View {
         Image(systemName: systemImage)
             .font(Typography.symbolButtonLabel.font)
-            .foregroundStyle(ColorTokens.labelVibrantControlPrimary)
+            .foregroundStyle(variant.foregroundColor)
             .frame(width: Metrics.controlSize, height: Metrics.controlSize)
             .contentShape(Circle())
-            .glassEffect(MaterialTokens.symbolButtonGlass, in: Circle())
+            .glassEffect(
+                variant == .tinted
+                    ? MaterialTokens.buttonGlass(for: .tinted)
+                    : MaterialTokens.symbolButtonGlass,
+                in: Circle()
+            )
     }
 }
 
 struct LiquidGlassSymbolButton: View {
     let systemImage: String
     var accessibilityLabel: LocalizedStringKey
+    var variant: LiquidGlassSymbolButtonVariant = .clear
     var isEnabled: Bool = true
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            LiquidGlassSymbolLabel(systemImage: systemImage)
+            LiquidGlassSymbolLabel(systemImage: systemImage, variant: variant)
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
@@ -117,9 +138,17 @@ struct LiquidGlassSymbolButton: View {
     ZStack {
         ColorTokens.backgroundPrimary.ignoresSafeArea()
 
-        LiquidGlassSymbolButton(
-            systemImage: "ellipsis",
-            accessibilityLabel: "Дополнительные действия"
-        ) {}
+        VStack(spacing: Spacing.small) {
+            LiquidGlassSymbolButton(
+                systemImage: "ellipsis",
+                accessibilityLabel: "Дополнительные действия"
+            ) {}
+
+            LiquidGlassSymbolButton(
+                systemImage: "checkmark",
+                accessibilityLabel: "Готово",
+                variant: .tinted
+            ) {}
+        }
     }
 }
