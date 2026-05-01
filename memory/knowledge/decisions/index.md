@@ -5,6 +5,7 @@
 ## Notes
 - [[memory/knowledge/decisions/adr-0001-native-ios-over-custom-recreation|ADR: Native iOS First, Figma-Driven But Not Figma-Locked]]
 - [[memory/knowledge/decisions/adr-0002-ios-26-minimum-deployment-target|ADR: iOS 26 As The Minimum Deployment Target]]
+- [[memory/knowledge/decisions/adr-0003-persistent-native-segmented-control-in-sheets|ADR: Keep Sheet Segmented Controls Persistent For Native Liquid Glass Animation]]
 
 ## Последнее обновление
-- 2026-04-19 19:47 MSK
+- 2026-05-01 23:36 MSK
