@@ -109,7 +109,8 @@ struct ProgramEditorContent: View {
                 if !exercises.isEmpty {
                     WorkoutExerciseList(
                         exercises: exercises,
-                        swipeActions: makeDefaultWorkoutExerciseSwipeActions()
+                        swipeActions: makeDefaultWorkoutExerciseSwipeActions(),
+                        onSelect: { _ in }
                     )
                     .frame(height: WorkoutExerciseList.height(for: exercises))
                 }

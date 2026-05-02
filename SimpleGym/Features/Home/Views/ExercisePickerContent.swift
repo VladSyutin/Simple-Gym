@@ -6,18 +6,9 @@ private enum ExercisePickerNavigationDirection {
     case backward
 }
 
-enum ExerciseCreationKind {
-    case cardio
-    case strength
-}
-
-struct ExercisePickerCategory: Identifiable {
-    let title: String
-    let imageName: String
-    let creationKind: ExerciseCreationKind
-    var exercises: [String]
-
-    var id: String { title }
+enum ExercisePickerSelectionMode {
+    case multiple
+    case single
 }
 
 private struct ExercisePickerExercise: Identifiable {
@@ -29,7 +20,7 @@ private struct ExercisePickerExercise: Identifiable {
 private struct ExerciseCreationContext: Identifiable {
     let categoryID: String
     let categoryTitle: String
-    let creationKind: ExerciseCreationKind
+    let creationKind: WorkoutExerciseKind
 
     var id: String { categoryID }
 }
@@ -40,6 +31,7 @@ struct ExercisePickerContent: View {
     let sheetTitle: String
     @Binding var showsTopAccessory: Bool
     let reservedTopAccessoryHeight: CGFloat
+    let selectionMode: ExercisePickerSelectionMode
     let onSave: ([HomeWorkoutExercise]) -> Void
 
     @State private var categories: [ExercisePickerCategory]
@@ -51,17 +43,21 @@ struct ExercisePickerContent: View {
     init(
         sheetTitle: String,
         initialExercises: [HomeWorkoutExercise] = [],
+        initialCategoryID: String? = nil,
         showsTopAccessory: Binding<Bool> = .constant(true),
         reservedTopAccessoryHeight: CGFloat = 0,
+        selectionMode: ExercisePickerSelectionMode = .multiple,
         onSave: @escaping ([HomeWorkoutExercise]) -> Void = { _ in }
     ) {
         self.sheetTitle = sheetTitle
         self._showsTopAccessory = showsTopAccessory
         self.reservedTopAccessoryHeight = reservedTopAccessoryHeight
+        self.selectionMode = selectionMode
         self.onSave = onSave
-        _categories = State(initialValue: Self.makeCategories(merging: initialExercises))
+        _categories = State(initialValue: ExerciseCatalog.categories(merging: initialExercises))
+        _selectedCategoryID = State(initialValue: initialCategoryID)
         _selectedExercisesByCategoryID = State(
-            initialValue: Self.makeInitialSelections(from: initialExercises)
+            initialValue: ExerciseCatalog.initialSelections(from: initialExercises)
         )
     }
 
@@ -270,18 +266,27 @@ struct ExercisePickerContent: View {
                 swipeActions: detailSwipeActions,
                 onSelect: { selectedTitle in
                     withAnimation(.easeInOut(duration: 0.18)) {
-                        var selections = selectedExercisesByCategoryID[category.id] ?? []
+                        switch selectionMode {
+                        case .multiple:
+                            var selections = selectedExercisesByCategoryID[category.id] ?? []
 
-                        if selections.contains(selectedTitle) {
-                            selections.remove(selectedTitle)
-                        } else {
-                            selections.insert(selectedTitle)
-                        }
+                            if selections.contains(selectedTitle) {
+                                selections.remove(selectedTitle)
+                            } else {
+                                selections.insert(selectedTitle)
+                            }
 
-                        if selections.isEmpty {
-                            selectedExercisesByCategoryID.removeValue(forKey: category.id)
-                        } else {
-                            selectedExercisesByCategoryID[category.id] = selections
+                            if selections.isEmpty {
+                                selectedExercisesByCategoryID.removeValue(forKey: category.id)
+                            } else {
+                                selectedExercisesByCategoryID[category.id] = selections
+                            }
+                        case .single:
+                            if selectedExercisesByCategoryID[category.id] == [selectedTitle] {
+                                selectedExercisesByCategoryID = [:]
+                            } else {
+                                selectedExercisesByCategoryID = [category.id: [selectedTitle]]
+                            }
                         }
                     }
                 }
@@ -383,133 +388,16 @@ struct ExercisePickerContent: View {
             let customTitles = selections.subtracting(orderedTitles).sorted()
 
             let exercises = (orderedTitles + customTitles).map { title in
-                HomeWorkoutExercise(title: title, imageName: category.imageName)
+                ExerciseCatalog.makeExercise(
+                    title: title,
+                    imageName: category.imageName,
+                    kind: category.creationKind
+                )
             }
 
             result.append(contentsOf: exercises)
         }
     }
-
-    private static func makeCategories(merging initialExercises: [HomeWorkoutExercise]) -> [ExercisePickerCategory] {
-        var categories = [
-            ExercisePickerCategory(
-                title: "Грудь",
-                imageName: "WorkoutIllustrationBreast",
-                creationKind: .strength,
-                exercises: [
-                    "Жим гантелей лёжа на наклонной скамье",
-                    "Жим штанги лёжа",
-                    "Отжимания",
-                    "Сведение рук в тренажёре",
-                ]
-            ),
-            ExercisePickerCategory(
-                title: "Кардио",
-                imageName: "WorkoutIllustrationCardio",
-                creationKind: .cardio,
-                exercises: [
-                    "Беговая дорожка",
-                    "Эллипсоид",
-                    "Велотренажёр",
-                ]
-            ),
-            ExercisePickerCategory(
-                title: "Ноги",
-                imageName: "WorkoutIllustrationLegs",
-                creationKind: .strength,
-                exercises: [
-                    "Приседания со штангой",
-                    "Жим ногами",
-                    "Выпады с гантелями",
-                ]
-            ),
-            ExercisePickerCategory(
-                title: "Плечи",
-                imageName: "WorkoutIllustrationShoulders",
-                creationKind: .strength,
-                exercises: [
-                    "Разведение гантелей в стороны",
-                    "Жим гантелей сидя",
-                    "Тяга штанги к подбородку",
-                ]
-            ),
-            ExercisePickerCategory(
-                title: "Пресс",
-                imageName: "WorkoutIllustrationPress",
-                creationKind: .strength,
-                exercises: [
-                    "Подъём ног к груди в висе",
-                    "Скручивания на полу",
-                    "Планка",
-                ]
-            ),
-            ExercisePickerCategory(
-                title: "Растяжка",
-                imageName: "WorkoutIllustrationStretching",
-                creationKind: .strength,
-                exercises: []
-            ),
-            ExercisePickerCategory(
-                title: "Руки",
-                imageName: "WorkoutIllustrationArms",
-                creationKind: .strength,
-                exercises: [
-                    "Подъём гантелей на бицепс",
-                    "Французский жим лёжа",
-                    "Разгибание рук на блоке",
-                ]
-            ),
-            ExercisePickerCategory(
-                title: "Спина",
-                imageName: "WorkoutIllustrationBack",
-                creationKind: .strength,
-                exercises: [
-                    "Вертикальная тяга блока широким хватом к груди",
-                    "Тяга штанги в наклоне",
-                    "Гиперэкстензия",
-                ]
-            ),
-        ]
-
-        for exercise in initialExercises {
-            guard
-                let categoryTitle = categoryTitleByImageName[exercise.imageName],
-                let categoryIndex = categories.firstIndex(where: { $0.title == categoryTitle })
-            else {
-                continue
-            }
-
-            let normalizedTitle = exercise.title.replacingOccurrences(of: "\n", with: " ")
-            if !categories[categoryIndex].exercises.contains(normalizedTitle) {
-                categories[categoryIndex].exercises.append(normalizedTitle)
-            }
-        }
-
-        return categories
-    }
-
-    private static func makeInitialSelections(from exercises: [HomeWorkoutExercise]) -> [String: Set<String>] {
-        var selections: [String: Set<String>] = [:]
-
-        for exercise in exercises {
-            guard let categoryTitle = categoryTitleByImageName[exercise.imageName] else { continue }
-            let normalizedTitle = exercise.title.replacingOccurrences(of: "\n", with: " ")
-            selections[categoryTitle, default: []].insert(normalizedTitle)
-        }
-
-        return selections
-    }
-
-    private static let categoryTitleByImageName: [String: String] = [
-        "WorkoutIllustrationBreast": "Грудь",
-        "WorkoutIllustrationCardio": "Кардио",
-        "WorkoutIllustrationLegs": "Ноги",
-        "WorkoutIllustrationShoulders": "Плечи",
-        "WorkoutIllustrationPress": "Пресс",
-        "WorkoutIllustrationStretching": "Растяжка",
-        "WorkoutIllustrationArms": "Руки",
-        "WorkoutIllustrationBack": "Спина",
-    ]
 }
 
 private struct ExercisePickerExerciseList: UIViewRepresentable {

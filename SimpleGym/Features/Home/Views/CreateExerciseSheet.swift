@@ -4,13 +4,27 @@ struct CreateExerciseSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     let categoryTitle: String
-    let creationKind: ExerciseCreationKind
+    let creationKind: WorkoutExerciseKind
+    let initialTitle: String
     let onCreate: (String) -> Void
 
-    @State private var exerciseTitle = ""
+    @State private var exerciseTitle: String
     @State private var doublesWeight = false
     @State private var usesBodyweight = false
     @FocusState private var isNameFieldFocused: Bool
+
+    init(
+        categoryTitle: String,
+        creationKind: WorkoutExerciseKind,
+        initialTitle: String = "",
+        onCreate: @escaping (String) -> Void
+    ) {
+        self.categoryTitle = categoryTitle
+        self.creationKind = creationKind
+        self.initialTitle = initialTitle
+        self.onCreate = onCreate
+        _exerciseTitle = State(initialValue: initialTitle)
+    }
 
     private var trimmedTitle: String {
         exerciseTitle.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -18,6 +32,10 @@ struct CreateExerciseSheet: View {
 
     private var canCreate: Bool {
         !trimmedTitle.isEmpty
+    }
+
+    private var isEditing: Bool {
+        !initialTitle.isEmpty
     }
 
     var body: some View {
@@ -46,7 +64,7 @@ struct CreateExerciseSheet: View {
     private var toolbar: some View {
         ZStack {
             VStack(spacing: 1) {
-                Text("Создание упражнения")
+                Text(isEditing ? "Изменение упражнения" : "Создание упражнения")
                     .font(.system(size: 15, weight: .semibold))
                     .tracking(-0.23)
                     .foregroundStyle(ColorTokens.labelPrimary)
@@ -70,7 +88,7 @@ struct CreateExerciseSheet: View {
                 if canCreate {
                     LiquidGlassSymbolButton(
                         systemImage: "checkmark",
-                        accessibilityLabel: "Добавить упражнение",
+                        accessibilityLabel: isEditing ? "Сохранить упражнение" : "Добавить упражнение",
                         variant: .tinted
                     ) {
                         createExercise()

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 private let simpleGymCalendar: Calendar = {
     var calendar = Calendar(identifier: .gregorian)
@@ -41,38 +42,18 @@ private struct CreateProgramContext: Identifiable {
     var id: String {
         [
             title,
-            exercises.map(\.id).joined(separator: "|")
+            exercises.map(\.id.uuidString).joined(separator: "|")
         ].joined(separator: "::")
     }
 }
 
-enum HomeWorkoutKind: Equatable {
-    case freeform
-    case program
-}
+private struct WorkoutExecutionRoute: Identifiable, Hashable {
+    let date: Date
+    let exerciseID: UUID
 
-func makeDefaultWorkoutExerciseSwipeActions() -> [SimpleGymRowSwipeAction] {
-    [
-        SimpleGymRowSwipeAction(
-            title: "Статистика",
-            systemImage: "chart.xyaxis.line",
-            tint: ColorTokens.accentOrange,
-            symbolPointSize: 17
-        ) {},
-        SimpleGymRowSwipeAction(
-            title: "Редактировать",
-            systemImage: "pencil.line",
-            tint: ColorTokens.accentGray,
-            symbolPointSize: 18
-        ) {},
-        SimpleGymRowSwipeAction(
-            title: "Удалить",
-            systemImage: "trash",
-            tint: ColorTokens.accentRed,
-            role: .destructive,
-            symbolPointSize: 18
-        ) {}
-    ]
+    var id: String {
+        "\(date.timeIntervalSince1970)-\(exerciseID.uuidString)"
+    }
 }
 
 struct HomeScreen: View {
@@ -87,6 +68,7 @@ struct HomeScreen: View {
     @State private var workoutComment = ""
     @State private var workoutSessionsByDate = HomeScreen.makeWorkoutSessions()
     @State private var workoutPrograms: [WorkoutProgramDraft] = []
+    @State private var workoutExecutionRoute: WorkoutExecutionRoute?
     @FocusState private var isCommentFieldFocused: Bool
 
     private var trainingDates: Set<Date> {
@@ -147,7 +129,7 @@ struct HomeScreen: View {
             }
 
             if let selectedWorkout {
-                workoutContent(for: selectedWorkout)
+                workoutContent(for: selectedWorkout, selectedDate: selectedDate)
             } else {
                 Spacer(minLength: Spacing.xxLarge)
 
@@ -206,7 +188,7 @@ struct HomeScreen: View {
                 AddExerciseSheet(
                     initialExercises: selectedWorkout?.exercises ?? [],
                     onSave: { exercises in
-                        updateExercises(exercises, for: selectedDate)
+                        updateExercises(exercises, preservingExistingState: true, for: selectedDate)
                     }
                 )
                     .presentationDetents([.large])
@@ -233,15 +215,30 @@ struct HomeScreen: View {
             .presentationCornerRadius(38)
             .presentationBackground(ColorTokens.backgroundPrimary)
         }
+        .navigationDestination(item: $workoutExecutionRoute) { route in
+            if let workout = workoutSession(for: route.date) {
+                WorkoutExecutionScreen(
+                    workoutTitle: workout.title,
+                    initialExercises: workout.exercises,
+                    initialExerciseID: route.exerciseID,
+                    onExercisesChange: { updatedExercises in
+                        updateExercises(updatedExercises, for: route.date)
+                    }
+                )
+            }
+        }
     }
 
     @ViewBuilder
-    private func workoutContent(for workout: HomeWorkoutSession) -> some View {
+    private func workoutContent(for workout: HomeWorkoutSession, selectedDate: Date) -> some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
                 WorkoutExerciseList(
                     exercises: workout.exercises,
-                    swipeActions: makeDefaultWorkoutExerciseSwipeActions()
+                    swipeActions: makeDefaultWorkoutExerciseSwipeActions(),
+                    onSelect: { exercise in
+                        openExercise(exercise, forWorkoutOn: selectedDate)
+                    }
                 )
                 .frame(maxWidth: .infinity)
                 .frame(height: WorkoutExerciseList.height(for: workout.exercises))
@@ -314,14 +311,30 @@ struct HomeScreen: View {
         }
     }
 
-    private func updateExercises(_ exercises: [HomeWorkoutExercise], for date: Date) {
+    private func updateExercises(
+        _ exercises: [HomeWorkoutExercise],
+        preservingExistingState: Bool = false,
+        for date: Date
+    ) {
         let normalizedDate = simpleGymCalendar.startOfDay(for: date)
         guard let existingWorkout = workoutSessionsByDate[normalizedDate] else { return }
 
         workoutSessionsByDate[normalizedDate] = HomeWorkoutSession(
             title: existingWorkout.title,
             kind: existingWorkout.kind,
-            exercises: exercises
+            exercises: preservingExistingState
+                ? ExerciseCatalog.mergeExercises(
+                    exercises,
+                    preservingExistingStateFrom: existingWorkout.exercises
+                )
+                : exercises
+        )
+    }
+
+    private func openExercise(_ exercise: HomeWorkoutExercise, forWorkoutOn date: Date) {
+        workoutExecutionRoute = WorkoutExecutionRoute(
+            date: simpleGymCalendar.startOfDay(for: date),
+            exerciseID: exercise.id
         )
     }
 
@@ -433,35 +446,23 @@ struct HomeScreen: View {
                 title: "Произвольная тренировка",
                 kind: .freeform,
                 exercises: [
-                    HomeWorkoutExercise(title: "Приседания со штангой", imageName: "WorkoutIllustrationLegs"),
-                    HomeWorkoutExercise(title: "Жим гантелей лёжа на наклонной скамье", imageName: "WorkoutIllustrationBreast"),
-                    HomeWorkoutExercise(title: "Вертикальная тяга блока широким хватом к груди", imageName: "WorkoutIllustrationBack"),
-                    HomeWorkoutExercise(title: "Подъём гантелей на бицепс", imageName: "WorkoutIllustrationArms"),
-                    HomeWorkoutExercise(title: "Разведение гантелей в стороны", imageName: "WorkoutIllustrationShoulders"),
-                    HomeWorkoutExercise(title: "Подъём ног к груди в висе", imageName: "WorkoutIllustrationPress"),
-                    HomeWorkoutExercise(title: "Беговая дорожка", imageName: "WorkoutIllustrationCardio"),
+                    HomeWorkoutExercise(title: "Приседания со штангой", imageName: "WorkoutIllustrationLegs", kind: .strength),
+                    HomeWorkoutExercise(title: "Жим гантелей лёжа на наклонной скамье", imageName: "WorkoutIllustrationBreast", kind: .strength),
+                    HomeWorkoutExercise(title: "Вертикальная тяга блока широким хватом к груди", imageName: "WorkoutIllustrationBack", kind: .strength),
+                    HomeWorkoutExercise(title: "Подъём гантелей на бицепс", imageName: "WorkoutIllustrationArms", kind: .strength),
+                    HomeWorkoutExercise(title: "Разведение гантелей в стороны", imageName: "WorkoutIllustrationShoulders", kind: .strength),
+                    HomeWorkoutExercise(title: "Подъём ног к груди в висе", imageName: "WorkoutIllustrationPress", kind: .strength),
+                    HomeWorkoutExercise(title: "Беговая дорожка", imageName: "WorkoutIllustrationCardio", kind: .cardio),
                 ]
             )
         ]
     }
 }
 
-struct HomeWorkoutSession {
-    let title: String
-    let kind: HomeWorkoutKind
-    let exercises: [HomeWorkoutExercise]
-}
-
-struct HomeWorkoutExercise: Identifiable {
-    let title: String
-    let imageName: String
-
-    var id: String { title }
-}
-
 struct WorkoutExerciseList: UIViewRepresentable {
     let exercises: [HomeWorkoutExercise]
     let swipeActions: [SimpleGymRowSwipeAction]
+    let onSelect: (HomeWorkoutExercise) -> Void
 
     static func height(for exercises: [HomeWorkoutExercise]) -> CGFloat {
         CGFloat(exercises.count) * SimpleGymRow.height
@@ -475,6 +476,7 @@ struct WorkoutExerciseList: UIViewRepresentable {
         let tableView = UITableView(frame: .zero, style: .plain)
         tableView.dataSource = context.coordinator
         tableView.delegate = context.coordinator
+        tableView.allowsSelection = false
         tableView.register(WorkoutExerciseCell.self, forCellReuseIdentifier: Coordinator.reuseIdentifier)
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .none
@@ -524,16 +526,14 @@ extension WorkoutExerciseList {
             }
             let exercise = parent.exercises[indexPath.row]
 
-            cell.configure(with: exercise)
+            cell.configure(with: exercise) {
+                self.parent.onSelect(exercise)
+            }
             return cell
         }
 
         func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
             SimpleGymRow.height
-        }
-
-        func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-            tableView.deselectRow(at: indexPath, animated: true)
         }
 
         func tableView(
@@ -564,18 +564,19 @@ private final class WorkoutExerciseCell: UITableViewCell {
     private static let maximumSwipeRevealWidth: CGFloat = 180
 
     private var exercise: HomeWorkoutExercise?
+    private var onTap: (() -> Void)?
     private var swipeRevealProgress: CGFloat = 0
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
 
-        selectionStyle = .none
         backgroundColor = .clear
         contentView.backgroundColor = .clear
         layoutMargins = .zero
         preservesSuperviewLayoutMargins = false
         separatorInset = .zero
         backgroundView = nil
+
     }
 
     @available(*, unavailable)
@@ -583,14 +584,16 @@ private final class WorkoutExerciseCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func configure(with exercise: HomeWorkoutExercise) {
+    func configure(with exercise: HomeWorkoutExercise, onTap: @escaping () -> Void) {
         self.exercise = exercise
+        self.onTap = onTap
         applyContentConfiguration()
     }
 
     override func prepareForReuse() {
         super.prepareForReuse()
         exercise = nil
+        onTap = nil
         swipeRevealProgress = 0
         contentConfiguration = nil
     }
@@ -616,11 +619,16 @@ private final class WorkoutExerciseCell: UITableViewCell {
         guard let exercise else { return }
 
         contentConfiguration = UIHostingConfiguration {
-            SimpleGymRow(
-                title: exercise.title,
-                imageName: exercise.imageName,
-                swipeRevealProgress: swipeRevealProgress
-            )
+            Button(action: {
+                self.onTap?()
+            }) {
+                SimpleGymRow(
+                    title: exercise.title,
+                    imageName: exercise.imageName,
+                    swipeRevealProgress: swipeRevealProgress
+                )
+            }
+            .buttonStyle(.plain)
         }
         .margins(.all, 0)
     }
@@ -1098,6 +1106,12 @@ private struct HomeSectionHeader: View {
         static let height: CGFloat = 56
     }
 
+    private var destructiveWorkoutIcon: Image {
+        let image = UIImage(systemName: "trash")?
+            .withTintColor(.systemRed, renderingMode: .alwaysOriginal)
+        return Image(uiImage: image ?? UIImage())
+    }
+
     var body: some View {
         HStack(spacing: Spacing.small) {
             Text(title)
@@ -1113,12 +1127,18 @@ private struct HomeSectionHeader: View {
                     Button("Сохранить как программу", systemImage: "bookmark", action: onSaveAsProgram)
                 }
 
-                Button("Удалить тренировку", systemImage: "trash", role: .destructive, action: onDeleteWorkout)
+                Button(role: .destructive, action: onDeleteWorkout) {
+                    HStack(spacing: Spacing.xSmall) {
+                        destructiveWorkoutIcon
+                        Text("Удалить тренировку")
+                            .foregroundStyle(ColorTokens.accentRed)
+                        Spacer(minLength: 0)
+                    }
+                }
             } label: {
                 LiquidGlassSymbolLabel(systemImage: "ellipsis")
             }
             .buttonStyle(.plain)
-            .tint(nil)
             .accessibilityLabel("Дополнительные действия")
         }
         .padding(.horizontal, Spacing.small)
