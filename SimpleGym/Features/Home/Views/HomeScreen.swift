@@ -658,6 +658,10 @@ private struct HomeCalendar: View {
         !calendar.isDate(selectedDate, inSameDayAs: currentDate)
     }
 
+    private var canCopyWorkoutToToday: Bool {
+        !calendar.isDate(selectedDate, inSameDayAs: currentDate)
+    }
+
     private var monthPageAnchors: [Date] {
         (-18 ... 18).compactMap { monthOffset in
             calendar.date(byAdding: .month, value: monthOffset, to: calendar.startOfMonth(for: currentDate))
@@ -731,6 +735,7 @@ private struct HomeCalendar: View {
                     HomeSectionHeader(
                         title: sectionTitle,
                         workoutKind: sectionKind ?? .freeform,
+                        canCopyToToday: canCopyWorkoutToToday,
                         onCopyToToday: onCopyToToday,
                         onSaveAsProgram: onSaveAsProgram,
                         onDeleteWorkout: onDeleteWorkout
@@ -1084,6 +1089,7 @@ private struct HomeCalendar: View {
 private struct HomeSectionHeader: View {
     let title: String
     let workoutKind: HomeWorkoutKind
+    let canCopyToToday: Bool
     let onCopyToToday: () -> Void
     let onSaveAsProgram: () -> Void
     let onDeleteWorkout: () -> Void
@@ -1099,7 +1105,9 @@ private struct HomeSectionHeader: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Menu {
-                Button("Копировать на сегодня", systemImage: "doc.on.doc", action: onCopyToToday)
+                if canCopyToToday {
+                    Button("Копировать на сегодня", systemImage: "doc.on.doc", action: onCopyToToday)
+                }
 
                 if workoutKind == .freeform {
                     Button("Сохранить как программу", systemImage: "bookmark", action: onSaveAsProgram)
