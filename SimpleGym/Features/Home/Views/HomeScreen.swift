@@ -218,6 +218,11 @@ struct HomeScreen: View {
                             exercises: exercises
                         )
                     )
+                    convertWorkoutToProgram(
+                        title: title,
+                        exercises: exercises,
+                        for: selectedDate
+                    )
                 }
             )
             .presentationDetents([.large])
@@ -474,6 +479,21 @@ struct HomeScreen: View {
         createProgramContext = CreateProgramContext(
             title: workout.title,
             exercises: workout.exercises
+        )
+    }
+
+    private func convertWorkoutToProgram(
+        title: String,
+        exercises: [HomeWorkoutExercise],
+        for date: Date
+    ) {
+        let normalizedDate = simpleGymCalendar.startOfDay(for: date)
+        guard workoutSessionsByDate[normalizedDate] != nil else { return }
+
+        workoutSessionsByDate[normalizedDate] = HomeWorkoutSession(
+            title: title,
+            kind: .program,
+            exercises: exercises
         )
     }
 
