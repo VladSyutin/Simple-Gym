@@ -22,7 +22,7 @@ private enum ProgramNavigationDirection {
     case backward
 }
 
-private struct WorkoutProgramDraft: Identifiable {
+struct WorkoutProgramDraft: Identifiable {
     let id: UUID
     let title: String
     let exercises: [HomeWorkoutExercise]
@@ -40,12 +40,22 @@ struct AddWorkoutSheet: View {
     @State private var showsExerciseTabSwitcher = true
     @State private var isCreateProgramSheetPresented = false
     @State private var editingProgram: WorkoutProgramDraft?
-    @State private var createdPrograms: [WorkoutProgramDraft] = []
     @State private var programsNavigationDirection: ProgramNavigationDirection = .forward
+
+    @Binding private var programs: [WorkoutProgramDraft]
+    let onAddWorkout: (HomeWorkoutSession) -> Void
 
     private enum Metrics {
         static let externalSegmentedTopInset: CGFloat = 78
         static let externalSegmentedReservedHeight: CGFloat = 44
+    }
+
+    init(
+        programs: Binding<[WorkoutProgramDraft]> = .constant([]),
+        onAddWorkout: @escaping (HomeWorkoutSession) -> Void = { _ in }
+    ) {
+        self._programs = programs
+        self.onAddWorkout = onAddWorkout
     }
 
     var body: some View {
@@ -56,7 +66,8 @@ struct AddWorkoutSheet: View {
                     ExercisePickerContent(
                         sheetTitle: "Добавление тренировки",
                         showsTopAccessory: $showsExerciseTabSwitcher,
-                        reservedTopAccessoryHeight: Metrics.externalSegmentedReservedHeight
+                        reservedTopAccessoryHeight: Metrics.externalSegmentedReservedHeight,
+                        onSave: addCustomWorkout(_:)
                     )
                 case .programs:
                     VStack(spacing: 0) {
@@ -131,7 +142,7 @@ struct AddWorkoutSheet: View {
         .sheet(isPresented: $isCreateProgramSheetPresented) {
             CreateProgramSheet(
                 onSave: { exercises, title in
-                    createdPrograms.append(
+                    programs.append(
                         WorkoutProgramDraft(
                             title: title,
                             exercises: exercises
@@ -198,13 +209,13 @@ struct AddWorkoutSheet: View {
 
     @ViewBuilder
     private var programsContent: some View {
-        if createdPrograms.isEmpty {
+        if programs.isEmpty {
             programsEmptyState
         } else {
             ProgramDraftList(
-                programs: createdPrograms,
+                programs: programs,
                 swipeActionsProvider: programSwipeActions(for:),
-                onSelect: openProgramEditor(_:)
+                onSelect: addProgramWorkout(_:)
             )
             .padding(.bottom, 108)
         }
@@ -239,11 +250,34 @@ struct AddWorkoutSheet: View {
         }
     }
 
+    private func addCustomWorkout(_ exercises: [HomeWorkoutExercise]) {
+        guard !exercises.isEmpty else { return }
+
+        onAddWorkout(
+            HomeWorkoutSession(
+                title: "Произвольная тренировка",
+                kind: .freeform,
+                exercises: exercises
+            )
+        )
+    }
+
+    private func addProgramWorkout(_ program: WorkoutProgramDraft) {
+        onAddWorkout(
+            HomeWorkoutSession(
+                title: program.title,
+                kind: .program,
+                exercises: program.exercises
+            )
+        )
+        dismiss()
+    }
+
     private func deleteProgram(_ program: WorkoutProgramDraft) {
-        guard let index = createdPrograms.firstIndex(where: { $0.id == program.id }) else { return }
+        guard let index = programs.firstIndex(where: { $0.id == program.id }) else { return }
 
         withAnimation(.easeInOut(duration: 0.22)) {
-            createdPrograms.remove(at: index)
+            _ = programs.remove(at: index)
         }
     }
 
@@ -290,8 +324,8 @@ struct AddWorkoutSheet: View {
                 }
             },
             onSave: { exercises, title in
-                guard let index = createdPrograms.firstIndex(where: { $0.id == program.id }) else { return }
-                createdPrograms[index] = WorkoutProgramDraft(
+                guard let index = programs.firstIndex(where: { $0.id == program.id }) else { return }
+                programs[index] = WorkoutProgramDraft(
                     id: program.id,
                     title: title,
                     exercises: exercises
@@ -438,12 +472,18 @@ private final class ProgramDraftCell: UITableViewCell {
         contentConfiguration = UIHostingConfiguration {
             SimpleGymRow(
                 title: program.title,
+                detail: exerciseCountText,
                 imageName: nil,
-                showsDisclosureIndicator: true
+                showsDisclosureIndicator: false
             )
             .background(Color.clear)
         }
         .margins(.all, 0)
+    }
+
+    private var exerciseCountText: String {
+        let count = program?.exercises.count ?? 0
+        return "\(count)"
     }
 }
 

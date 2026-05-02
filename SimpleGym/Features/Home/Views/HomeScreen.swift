@@ -34,6 +34,23 @@ private enum HomeSheetDestination: Identifiable {
     }
 }
 
+private struct CreateProgramContext: Identifiable {
+    let title: String
+    let exercises: [HomeWorkoutExercise]
+
+    var id: String {
+        [
+            title,
+            exercises.map(\.id).joined(separator: "|")
+        ].joined(separator: "::")
+    }
+}
+
+enum HomeWorkoutKind: Equatable {
+    case freeform
+    case program
+}
+
 func makeDefaultWorkoutExerciseSwipeActions() -> [SimpleGymRowSwipeAction] {
     [
         SimpleGymRowSwipeAction(
@@ -66,8 +83,10 @@ struct HomeScreen: View {
     @State private var transitionDisplayedMonthStart: Date?
     @State private var displayedMonthReleaseWorkItem: DispatchWorkItem?
     @State private var activeSheet: HomeSheetDestination?
+    @State private var createProgramContext: CreateProgramContext?
     @State private var workoutComment = ""
     @State private var workoutSessionsByDate = HomeScreen.makeWorkoutSessions()
+    @State private var workoutPrograms: [WorkoutProgramDraft] = []
     @FocusState private var isCommentFieldFocused: Bool
 
     private var trainingDates: Set<Date> {
@@ -97,6 +116,7 @@ struct HomeScreen: View {
                 isTransitioning: isCalendarTransitioning,
                 isExpanded: isCalendarExpanded,
                 sectionTitle: selectedWorkout?.title,
+                sectionKind: selectedWorkout?.kind,
                 trainingDates: trainingDates,
                 onMonthTap: {
                     toggleCalendar(selectedDate: selectedDate)
@@ -106,6 +126,15 @@ struct HomeScreen: View {
                 },
                 onDateTap: { date in
                     setSelectedDate(date, currentDate: currentDate)
+                },
+                onCopyToToday: {
+                    copyWorkoutToToday(from: selectedDate, currentDate: currentDate)
+                },
+                onSaveAsProgram: {
+                    saveWorkoutAsProgram(selectedWorkout)
+                },
+                onDeleteWorkout: {
+                    deleteWorkout(for: selectedDate)
                 }
             )
             .onChange(of: visibleMonthPageID) { _, newValue in
@@ -163,7 +192,12 @@ struct HomeScreen: View {
         .sheet(item: $activeSheet) { destination in
             switch destination {
             case .addWorkout:
-                AddWorkoutSheet()
+                AddWorkoutSheet(
+                    programs: $workoutPrograms,
+                    onAddWorkout: { workout in
+                        addWorkoutSession(workout, for: selectedDate)
+                    }
+                )
                     .presentationDetents([.large])
                     .presentationDragIndicator(.hidden)
                     .presentationCornerRadius(38)
@@ -180,6 +214,24 @@ struct HomeScreen: View {
                     .presentationCornerRadius(38)
                     .presentationBackground(ColorTokens.backgroundPrimary)
             }
+        }
+        .sheet(item: $createProgramContext) { context in
+            CreateProgramSheet(
+                initialTitle: context.title == "Произвольная тренировка" ? "" : context.title,
+                initialExercises: context.exercises,
+                onSave: { exercises, title in
+                    workoutPrograms.append(
+                        WorkoutProgramDraft(
+                            title: title,
+                            exercises: exercises
+                        )
+                    )
+                }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(38)
+            .presentationBackground(ColorTokens.backgroundPrimary)
         }
     }
 
@@ -268,8 +320,44 @@ struct HomeScreen: View {
 
         workoutSessionsByDate[normalizedDate] = HomeWorkoutSession(
             title: existingWorkout.title,
+            kind: existingWorkout.kind,
             exercises: exercises
         )
+    }
+
+    private func addWorkoutSession(_ workout: HomeWorkoutSession, for date: Date) {
+        let normalizedDate = simpleGymCalendar.startOfDay(for: date)
+        workoutSessionsByDate[normalizedDate] = workout
+        activeSheet = nil
+    }
+
+    private func copyWorkoutToToday(from date: Date, currentDate: Date) {
+        let sourceDate = simpleGymCalendar.startOfDay(for: date)
+        let today = simpleGymCalendar.startOfDay(for: currentDate)
+
+        guard
+            sourceDate != today,
+            let workout = workoutSessionsByDate[sourceDate]
+        else {
+            return
+        }
+
+        workoutSessionsByDate[today] = workout
+        setSelectedDate(today, currentDate: currentDate)
+    }
+
+    private func saveWorkoutAsProgram(_ workout: HomeWorkoutSession?) {
+        guard let workout, workout.kind == .freeform else { return }
+
+        createProgramContext = CreateProgramContext(
+            title: workout.title,
+            exercises: workout.exercises
+        )
+    }
+
+    private func deleteWorkout(for date: Date) {
+        let normalizedDate = simpleGymCalendar.startOfDay(for: date)
+        workoutSessionsByDate.removeValue(forKey: normalizedDate)
     }
 
     private func jumpToToday(currentDate: Date) {
@@ -343,6 +431,7 @@ struct HomeScreen: View {
         return [
             simpleGymCalendar.startOfDay(for: workoutDate): HomeWorkoutSession(
                 title: "Произвольная тренировка",
+                kind: .freeform,
                 exercises: [
                     HomeWorkoutExercise(title: "Приседания со штангой", imageName: "WorkoutIllustrationLegs"),
                     HomeWorkoutExercise(title: "Жим гантелей лёжа на наклонной скамье", imageName: "WorkoutIllustrationBreast"),
@@ -357,8 +446,9 @@ struct HomeScreen: View {
     }
 }
 
-private struct HomeWorkoutSession {
+struct HomeWorkoutSession {
     let title: String
+    let kind: HomeWorkoutKind
     let exercises: [HomeWorkoutExercise]
 }
 
@@ -549,10 +639,14 @@ private struct HomeCalendar: View {
     let isTransitioning: Bool
     let isExpanded: Bool
     let sectionTitle: String?
+    let sectionKind: HomeWorkoutKind?
     let trainingDates: Set<Date>
     let onMonthTap: () -> Void
     let onTodayTap: () -> Void
     let onDateTap: (Date) -> Void
+    let onCopyToToday: () -> Void
+    let onSaveAsProgram: () -> Void
+    let onDeleteWorkout: () -> Void
 
     private static let weekdaySymbols = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"]
 
@@ -634,7 +728,13 @@ private struct HomeCalendar: View {
                 .clipped()
 
                 if let sectionTitle {
-                    HomeSectionHeader(title: sectionTitle)
+                    HomeSectionHeader(
+                        title: sectionTitle,
+                        workoutKind: sectionKind ?? .freeform,
+                        onCopyToToday: onCopyToToday,
+                        onSaveAsProgram: onSaveAsProgram,
+                        onDeleteWorkout: onDeleteWorkout
+                    )
                 }
             }
             .scrollChromeSurface()
@@ -983,6 +1083,10 @@ private struct HomeCalendar: View {
 
 private struct HomeSectionHeader: View {
     let title: String
+    let workoutKind: HomeWorkoutKind
+    let onCopyToToday: () -> Void
+    let onSaveAsProgram: () -> Void
+    let onDeleteWorkout: () -> Void
 
     private enum Metrics {
         static let height: CGFloat = 56
@@ -995,9 +1099,13 @@ private struct HomeSectionHeader: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Menu {
-                Button("Копировать на сегодня", systemImage: "doc.on.doc") {}
-                Button("Сохранить как программу", systemImage: "bookmark") {}
-                Button("Удалить тренировку", systemImage: "trash", role: .destructive) {}
+                Button("Копировать на сегодня", systemImage: "doc.on.doc", action: onCopyToToday)
+
+                if workoutKind == .freeform {
+                    Button("Сохранить как программу", systemImage: "bookmark", action: onSaveAsProgram)
+                }
+
+                Button("Удалить тренировку", systemImage: "trash", role: .destructive, action: onDeleteWorkout)
             } label: {
                 LiquidGlassSymbolLabel(systemImage: "ellipsis")
             }
