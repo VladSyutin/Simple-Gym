@@ -17,12 +17,19 @@ private struct ExercisePickerExercise: Identifiable {
     var id: String { title }
 }
 
-private struct ExerciseCreationContext: Identifiable {
+private struct ExerciseEditorContext: Identifiable {
     let categoryID: String
     let categoryTitle: String
-    let creationKind: WorkoutExerciseKind
+    let exerciseTitle: String?
+    let exerciseKind: WorkoutExerciseKind
 
-    var id: String { categoryID }
+    var id: String {
+        [categoryID, exerciseTitle ?? "new"].joined(separator: "::")
+    }
+
+    var isEditing: Bool {
+        exerciseTitle != nil
+    }
 }
 
 struct ExercisePickerContent: View {
@@ -38,7 +45,7 @@ struct ExercisePickerContent: View {
     @State private var selectedCategoryID: String?
     @State private var selectedExercisesByCategoryID: [String: Set<String>]
     @State private var navigationDirection: ExercisePickerNavigationDirection = .forward
-    @State private var creationContext: ExerciseCreationContext?
+    @State private var editorContext: ExerciseEditorContext?
 
     init(
         sheetTitle: String,
@@ -93,12 +100,17 @@ struct ExercisePickerContent: View {
                 detailBottomBar(for: selectedCategory)
             }
         }
-        .sheet(item: $creationContext) { context in
+        .sheet(item: $editorContext) { context in
             CreateExerciseSheet(
                 categoryTitle: context.categoryTitle,
-                creationKind: context.creationKind,
+                creationKind: context.exerciseKind,
+                initialTitle: context.exerciseTitle ?? "",
                 onCreate: { title in
-                    addCreatedExercise(title, toCategoryID: context.categoryID)
+                    saveExerciseTitle(
+                        title,
+                        inCategoryID: context.categoryID,
+                        replacing: context.exerciseTitle
+                    )
                 }
             )
             .presentationDetents([.large])
@@ -263,7 +275,7 @@ struct ExercisePickerContent: View {
             ExercisePickerExerciseList(
                 exercises: category.exercises.map(ExercisePickerExercise.init(title:)),
                 selectedExerciseTitles: selectedExercisesByCategoryID[category.id] ?? [],
-                swipeActions: detailSwipeActions,
+                swipeActionsProvider: detailSwipeActions(for:),
                 onSelect: { selectedTitle in
                     withAnimation(.easeInOut(duration: 0.18)) {
                         switch selectionMode {
@@ -301,10 +313,11 @@ struct ExercisePickerContent: View {
                 systemImage: "plus",
                 variant: category.exercises.isEmpty ? .tinted : .clear
             ) {
-                creationContext = ExerciseCreationContext(
+                editorContext = ExerciseEditorContext(
                     categoryID: category.id,
                     categoryTitle: category.title,
-                    creationKind: category.creationKind
+                    exerciseTitle: nil,
+                    exerciseKind: category.creationKind
                 )
             }
             .padding(.horizontal, Spacing.xLarge)
@@ -325,8 +338,10 @@ struct ExercisePickerContent: View {
         }
     }
 
-    private var detailSwipeActions: [SimpleGymRowSwipeAction] {
-        [
+    private func detailSwipeActions(for exerciseTitle: String) -> [SimpleGymRowSwipeAction] {
+        guard let selectedCategory else { return [] }
+
+        return [
             SimpleGymRowSwipeAction(
                 title: "Статистика",
                 systemImage: "chart.xyaxis.line",
@@ -338,14 +353,23 @@ struct ExercisePickerContent: View {
                 systemImage: "pencil.line",
                 tint: ColorTokens.accentGray,
                 symbolPointSize: 18
-            ) {},
+            ) {
+                editorContext = ExerciseEditorContext(
+                    categoryID: selectedCategory.id,
+                    categoryTitle: selectedCategory.title,
+                    exerciseTitle: exerciseTitle,
+                    exerciseKind: selectedCategory.creationKind
+                )
+            },
             SimpleGymRowSwipeAction(
                 title: "Удалить",
                 systemImage: "trash",
                 tint: ColorTokens.accentRed,
                 role: .destructive,
                 symbolPointSize: 18
-            ) {}
+            ) {
+                deleteExercise(exerciseTitle, fromCategoryID: selectedCategory.id)
+            }
         ]
     }
 
@@ -364,19 +388,59 @@ struct ExercisePickerContent: View {
         dismiss()
     }
 
-    private func addCreatedExercise(_ title: String, toCategoryID categoryID: String) {
+    private func saveExerciseTitle(
+        _ title: String,
+        inCategoryID categoryID: String,
+        replacing originalTitle: String?
+    ) {
         let normalizedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedTitle.isEmpty else { return }
 
-        if let categoryIndex = categories.firstIndex(where: { $0.id == categoryID }) {
-            if !categories[categoryIndex].exercises.contains(normalizedTitle) {
-                categories[categoryIndex].exercises.append(normalizedTitle)
-            }
+        guard let categoryIndex = categories.firstIndex(where: { $0.id == categoryID }) else {
+            return
         }
 
+        var exercises = categories[categoryIndex].exercises
+
+        if let originalTitle, let exerciseIndex = exercises.firstIndex(of: originalTitle) {
+            if originalTitle != normalizedTitle, exercises.contains(normalizedTitle) {
+                return
+            }
+
+            exercises[exerciseIndex] = normalizedTitle
+        } else if !exercises.contains(normalizedTitle) {
+            exercises.append(normalizedTitle)
+        }
+
+        categories[categoryIndex].exercises = exercises
+
         var selections = selectedExercisesByCategoryID[categoryID] ?? []
-        selections.insert(normalizedTitle)
+
+        if let originalTitle, selections.contains(originalTitle) {
+            selections.remove(originalTitle)
+            selections.insert(normalizedTitle)
+        } else {
+            selections.insert(normalizedTitle)
+        }
+
         selectedExercisesByCategoryID[categoryID] = selections
+    }
+
+    private func deleteExercise(_ title: String, fromCategoryID categoryID: String) {
+        guard let categoryIndex = categories.firstIndex(where: { $0.id == categoryID }) else {
+            return
+        }
+
+        categories[categoryIndex].exercises.removeAll { $0 == title }
+
+        guard var selections = selectedExercisesByCategoryID[categoryID] else { return }
+        selections.remove(title)
+
+        if selections.isEmpty {
+            selectedExercisesByCategoryID.removeValue(forKey: categoryID)
+        } else {
+            selectedExercisesByCategoryID[categoryID] = selections
+        }
     }
 
     private func flattenSelectedExercises() -> [HomeWorkoutExercise] {
@@ -403,7 +467,7 @@ struct ExercisePickerContent: View {
 private struct ExercisePickerExerciseList: UIViewRepresentable {
     let exercises: [ExercisePickerExercise]
     let selectedExerciseTitles: Set<String>
-    let swipeActions: [SimpleGymRowSwipeAction]
+    let swipeActionsProvider: (String) -> [SimpleGymRowSwipeAction]
     let onSelect: (String) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -479,7 +543,8 @@ extension ExercisePickerExerciseList {
             _ tableView: UITableView,
             trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
         ) -> UISwipeActionsConfiguration? {
-            let actions = parent.swipeActions.map { swipeAction in
+            let exercise = parent.exercises[indexPath.row]
+            let actions = parent.swipeActionsProvider(exercise.title).map { swipeAction in
                 let style: UIContextualAction.Style = swipeAction.role == .destructive ? .destructive : .normal
                 let action = UIContextualAction(style: style, title: nil) { _, _, completion in
                     swipeAction.action()
