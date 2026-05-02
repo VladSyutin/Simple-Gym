@@ -22,8 +22,9 @@
 - [[memory/knowledge/decisions/adr-0003-persistent-native-segmented-control-in-sheets|ADR: Keep Sheet Segmented Controls Persistent For Native Liquid Glass Animation]]
 
 ### Последние логи
+- [[memory/logs/2026-05-01|2026-05-01]]
 - [[memory/logs/2026-04-19|2026-04-19]]
 - [[memory/logs/2026-04-18|2026-04-18]]
 
 ## Последнее обновление
-- 2026-05-01 23:36 MSK
+- 2026-05-02 08:20 MSK
