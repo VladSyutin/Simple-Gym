@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 private enum AddWorkoutSheetTab: String, CaseIterable, Identifiable {
     case exercises
@@ -200,27 +201,49 @@ struct AddWorkoutSheet: View {
         if createdPrograms.isEmpty {
             programsEmptyState
         } else {
-            ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 0) {
-                    ForEach(createdPrograms) { program in
-                        Button {
-                            programsNavigationDirection = .forward
-                            withAnimation(.easeInOut(duration: 0.28)) {
-                                editingProgram = program
-                            }
-                        } label: {
-                            SimpleGymRow(
-                                title: program.title,
-                                imageName: nil,
-                                showsDisclosureIndicator: true
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.bottom, 108)
+            ProgramDraftList(
+                programs: createdPrograms,
+                swipeActionsProvider: programSwipeActions(for:),
+                onSelect: openProgramEditor(_:)
+            )
+            .padding(.bottom, 108)
+        }
+    }
+
+    private func programSwipeActions(for program: WorkoutProgramDraft) -> [SimpleGymRowSwipeAction] {
+        [
+            SimpleGymRowSwipeAction(
+                title: "Редактировать",
+                systemImage: "pencil.line",
+                tint: ColorTokens.accentGray,
+                symbolPointSize: 18
+            ) {
+                openProgramEditor(program)
+            },
+            SimpleGymRowSwipeAction(
+                title: "Удалить",
+                systemImage: "trash",
+                tint: ColorTokens.accentRed,
+                role: .destructive,
+                symbolPointSize: 18
+            ) {
+                deleteProgram(program)
             }
-            .scrollIndicators(.hidden)
+        ]
+    }
+
+    private func openProgramEditor(_ program: WorkoutProgramDraft) {
+        programsNavigationDirection = .forward
+        withAnimation(.easeInOut(duration: 0.28)) {
+            editingProgram = program
+        }
+    }
+
+    private func deleteProgram(_ program: WorkoutProgramDraft) {
+        guard let index = createdPrograms.firstIndex(where: { $0.id == program.id }) else { return }
+
+        withAnimation(.easeInOut(duration: 0.22)) {
+            createdPrograms.remove(at: index)
         }
     }
 
@@ -281,6 +304,147 @@ struct AddWorkoutSheet: View {
         )
     }
 
+}
+
+private struct ProgramDraftList: UIViewRepresentable {
+    let programs: [WorkoutProgramDraft]
+    let swipeActionsProvider: (WorkoutProgramDraft) -> [SimpleGymRowSwipeAction]
+    let onSelect: (WorkoutProgramDraft) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeUIView(context: Context) -> UITableView {
+        let tableView = UITableView(frame: .zero, style: .plain)
+        tableView.dataSource = context.coordinator
+        tableView.delegate = context.coordinator
+        tableView.register(ProgramDraftCell.self, forCellReuseIdentifier: Coordinator.reuseIdentifier)
+        tableView.backgroundColor = .clear
+        tableView.separatorStyle = .none
+        tableView.showsVerticalScrollIndicator = false
+        tableView.showsHorizontalScrollIndicator = false
+        tableView.rowHeight = SimpleGymRow.height
+        tableView.estimatedRowHeight = SimpleGymRow.height
+        tableView.contentInset = .zero
+        tableView.layoutMargins = .zero
+        tableView.cellLayoutMarginsFollowReadableWidth = false
+
+        if #available(iOS 15.0, *) {
+            tableView.fillerRowHeight = 0
+            tableView.sectionHeaderTopPadding = 0
+        }
+
+        return tableView
+    }
+
+    func updateUIView(_ tableView: UITableView, context: Context) {
+        context.coordinator.parent = self
+        tableView.reloadData()
+    }
+}
+
+extension ProgramDraftList {
+    final class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate {
+        static let reuseIdentifier = "ProgramDraftCell"
+
+        var parent: ProgramDraftList
+
+        init(parent: ProgramDraftList) {
+            self.parent = parent
+        }
+
+        func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+            parent.programs.count
+        }
+
+        func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+            guard let cell = tableView.dequeueReusableCell(
+                withIdentifier: Self.reuseIdentifier,
+                for: indexPath
+            ) as? ProgramDraftCell else {
+                return UITableViewCell()
+            }
+
+            cell.configure(with: parent.programs[indexPath.row])
+            return cell
+        }
+
+        func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+            parent.onSelect(parent.programs[indexPath.row])
+            tableView.deselectRow(at: indexPath, animated: true)
+        }
+
+        func tableView(
+            _ tableView: UITableView,
+            trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
+        ) -> UISwipeActionsConfiguration? {
+            let program = parent.programs[indexPath.row]
+            let actions = parent.swipeActionsProvider(program).map { swipeAction in
+                let style: UIContextualAction.Style = swipeAction.role == .destructive ? .destructive : .normal
+                let action = UIContextualAction(style: style, title: nil) { _, _, completion in
+                    swipeAction.action()
+                    completion(true)
+                }
+
+                action.backgroundColor = .clear
+                action.image = SimpleGymSwipeActionImageRenderer.make(for: swipeAction)
+                return action
+            }
+
+            let configuration = UISwipeActionsConfiguration(actions: actions)
+            configuration.performsFirstActionWithFullSwipe = false
+            return configuration
+        }
+    }
+}
+
+private final class ProgramDraftCell: UITableViewCell {
+    private var program: WorkoutProgramDraft?
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+
+        selectionStyle = .none
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+        layoutMargins = .zero
+        preservesSuperviewLayoutMargins = false
+        separatorInset = .zero
+        backgroundView = nil
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func configure(with program: WorkoutProgramDraft) {
+        self.program = program
+        applyContentConfiguration()
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        program = nil
+    }
+
+    private func applyContentConfiguration() {
+        guard let program else {
+            contentConfiguration = nil
+            return
+        }
+
+        contentConfiguration = UIHostingConfiguration {
+            SimpleGymRow(
+                title: program.title,
+                imageName: nil,
+                showsDisclosureIndicator: true
+            )
+            .background(Color.clear)
+        }
+        .margins(.all, 0)
+    }
 }
 
 #Preview("Exercises") {
