@@ -43,9 +43,8 @@ struct HomeScreen: View {
     @State private var displayedMonthReleaseWorkItem: DispatchWorkItem?
     @State private var activeSheet: HomeSheetDestination?
     @State private var workoutComment = ""
+    @State private var workoutSessionsByDate = HomeScreen.makeWorkoutSessions()
     @FocusState private var isCommentFieldFocused: Bool
-
-    private let workoutSessionsByDate = HomeScreen.makeWorkoutSessions()
 
     private var trainingDates: Set<Date> {
         Set(workoutSessionsByDate.keys)
@@ -146,7 +145,12 @@ struct HomeScreen: View {
                     .presentationCornerRadius(38)
                     .presentationBackground(ColorTokens.backgroundPrimary)
             case .addExercise:
-                AddExerciseSheet(initialExercises: selectedWorkout?.exercises ?? [])
+                AddExerciseSheet(
+                    initialExercises: selectedWorkout?.exercises ?? [],
+                    onSave: { exercises in
+                        updateExercises(exercises, for: selectedDate)
+                    }
+                )
                     .presentationDetents([.large])
                     .presentationDragIndicator(.hidden)
                     .presentationCornerRadius(38)
@@ -256,6 +260,16 @@ struct HomeScreen: View {
             visibleMonthPageID = simpleGymCalendar.startOfMonth(for: normalizedDate)
             visibleWeekPageID = simpleGymCalendar.startOfWeek(for: normalizedDate)
         }
+    }
+
+    private func updateExercises(_ exercises: [HomeWorkoutExercise], for date: Date) {
+        let normalizedDate = simpleGymCalendar.startOfDay(for: date)
+        guard let existingWorkout = workoutSessionsByDate[normalizedDate] else { return }
+
+        workoutSessionsByDate[normalizedDate] = HomeWorkoutSession(
+            title: existingWorkout.title,
+            exercises: exercises
+        )
     }
 
     private func jumpToToday(currentDate: Date) {
