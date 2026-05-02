@@ -109,7 +109,7 @@ struct ProgramEditorContent: View {
                 if !exercises.isEmpty {
                     WorkoutExerciseList(
                         exercises: exercises,
-                        swipeActions: makeDefaultWorkoutExerciseSwipeActions(),
+                        swipeActionsProvider: programExerciseSwipeActions(for:),
                         onSelect: { _ in }
                     )
                     .frame(height: WorkoutExerciseList.height(for: exercises))
@@ -185,6 +185,30 @@ struct ProgramEditorContent: View {
             )
             .ignoresSafeArea(edges: .bottom)
         }
+    }
+
+    private func programExerciseSwipeActions(for exercise: HomeWorkoutExercise) -> [SimpleGymRowSwipeAction] {
+        [
+            SimpleGymRowSwipeAction(
+                title: "Редактировать",
+                systemImage: "pencil.line",
+                tint: ColorTokens.accentGray,
+                symbolPointSize: 18
+            ) {},
+            SimpleGymRowSwipeAction(
+                title: "Удалить",
+                systemImage: "trash",
+                tint: ColorTokens.accentRed,
+                role: .destructive,
+                symbolPointSize: 18
+            ) {
+                deleteExercise(exercise)
+            }
+        ]
+    }
+
+    private func deleteExercise(_ exercise: HomeWorkoutExercise) {
+        exercises.removeAll { $0.id == exercise.id }
     }
 }
 

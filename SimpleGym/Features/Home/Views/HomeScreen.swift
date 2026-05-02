@@ -56,6 +56,15 @@ private struct WorkoutExecutionRoute: Identifiable, Hashable {
     }
 }
 
+private struct ExerciseReplacementContext: Identifiable {
+    let date: Date
+    let exercise: HomeWorkoutExercise
+
+    var id: String {
+        "\(date.timeIntervalSince1970)-\(exercise.id.uuidString)"
+    }
+}
+
 struct HomeScreen: View {
     @State private var isCalendarExpanded = false
     @State private var userSelectedDate: Date?
@@ -69,6 +78,7 @@ struct HomeScreen: View {
     @State private var workoutSessionsByDate = HomeScreen.makeWorkoutSessions()
     @State private var workoutPrograms: [WorkoutProgramDraft] = []
     @State private var workoutExecutionRoute: WorkoutExecutionRoute?
+    @State private var exerciseReplacementContext: ExerciseReplacementContext?
     @FocusState private var isCommentFieldFocused: Bool
 
     private var trainingDates: Set<Date> {
@@ -215,6 +225,19 @@ struct HomeScreen: View {
             .presentationCornerRadius(38)
             .presentationBackground(ColorTokens.backgroundPrimary)
         }
+        .sheet(item: $exerciseReplacementContext) { context in
+            ReplaceExerciseSheet(exercise: context.exercise) { updatedTitle in
+                replaceExerciseTitle(
+                    exerciseID: context.exercise.id,
+                    with: updatedTitle,
+                    forWorkoutOn: context.date
+                )
+            }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(38)
+            .presentationBackground(ColorTokens.backgroundPrimary)
+        }
         .navigationDestination(item: $workoutExecutionRoute) { route in
             if let workout = workoutSession(for: route.date) {
                 WorkoutExecutionScreen(
@@ -235,7 +258,9 @@ struct HomeScreen: View {
             VStack(spacing: 0) {
                 WorkoutExerciseList(
                     exercises: workout.exercises,
-                    swipeActions: makeDefaultWorkoutExerciseSwipeActions(),
+                    swipeActionsProvider: { exercise in
+                        workoutExerciseSwipeActions(for: exercise, selectedDate: selectedDate)
+                    },
                     onSelect: { exercise in
                         openExercise(exercise, forWorkoutOn: selectedDate)
                     }
@@ -318,16 +343,22 @@ struct HomeScreen: View {
     ) {
         let normalizedDate = simpleGymCalendar.startOfDay(for: date)
         guard let existingWorkout = workoutSessionsByDate[normalizedDate] else { return }
+        let resolvedExercises = preservingExistingState
+            ? ExerciseCatalog.mergeExercises(
+                exercises,
+                preservingExistingStateFrom: existingWorkout.exercises
+            )
+            : exercises
+
+        guard !resolvedExercises.isEmpty else {
+            workoutSessionsByDate.removeValue(forKey: normalizedDate)
+            return
+        }
 
         workoutSessionsByDate[normalizedDate] = HomeWorkoutSession(
             title: existingWorkout.title,
             kind: existingWorkout.kind,
-            exercises: preservingExistingState
-                ? ExerciseCatalog.mergeExercises(
-                    exercises,
-                    preservingExistingStateFrom: existingWorkout.exercises
-                )
-                : exercises
+            exercises: resolvedExercises
         )
     }
 
@@ -335,6 +366,84 @@ struct HomeScreen: View {
         workoutExecutionRoute = WorkoutExecutionRoute(
             date: simpleGymCalendar.startOfDay(for: date),
             exerciseID: exercise.id
+        )
+    }
+
+    private func workoutExerciseSwipeActions(
+        for exercise: HomeWorkoutExercise,
+        selectedDate: Date
+    ) -> [SimpleGymRowSwipeAction] {
+        [
+            SimpleGymRowSwipeAction(
+                title: "Статистика",
+                systemImage: "chart.xyaxis.line",
+                tint: ColorTokens.accentOrange,
+                symbolPointSize: 17
+            ) {},
+            SimpleGymRowSwipeAction(
+                title: "Редактировать",
+                systemImage: "pencil.line",
+                tint: ColorTokens.accentGray,
+                symbolPointSize: 18
+            ) {
+                openExerciseReplacementSheet(for: exercise, on: selectedDate)
+            },
+            SimpleGymRowSwipeAction(
+                title: "Удалить",
+                systemImage: "trash",
+                tint: ColorTokens.accentRed,
+                role: .destructive,
+                symbolPointSize: 18
+            ) {
+                deleteExercise(exercise, fromWorkoutOn: selectedDate)
+            }
+        ]
+    }
+
+    private func deleteExercise(_ exercise: HomeWorkoutExercise, fromWorkoutOn date: Date) {
+        let normalizedDate = simpleGymCalendar.startOfDay(for: date)
+        guard let workout = workoutSessionsByDate[normalizedDate] else { return }
+
+        let updatedExercises = workout.exercises.filter { $0.id != exercise.id }
+        guard !updatedExercises.isEmpty else {
+            workoutSessionsByDate.removeValue(forKey: normalizedDate)
+            return
+        }
+
+        workoutSessionsByDate[normalizedDate] = HomeWorkoutSession(
+            title: workout.title,
+            kind: workout.kind,
+            exercises: updatedExercises
+        )
+    }
+
+    private func openExerciseReplacementSheet(for exercise: HomeWorkoutExercise, on date: Date) {
+        exerciseReplacementContext = ExerciseReplacementContext(
+            date: simpleGymCalendar.startOfDay(for: date),
+            exercise: exercise
+        )
+    }
+
+    private func replaceExerciseTitle(
+        exerciseID: UUID,
+        with updatedTitle: String,
+        forWorkoutOn date: Date
+    ) {
+        let normalizedDate = simpleGymCalendar.startOfDay(for: date)
+        guard let workout = workoutSessionsByDate[normalizedDate] else { return }
+
+        let updatedExercises = workout.exercises.map { exercise in
+            guard exercise.id == exerciseID else { return exercise }
+
+            var updatedExercise = exercise
+            updatedExercise.title = updatedTitle
+            return updatedExercise
+        }
+
+        workoutSessionsByDate[normalizedDate] = HomeWorkoutSession(
+            title: workout.title,
+            kind: workout.kind,
+            exercises: updatedExercises
         )
     }
 
@@ -461,8 +570,28 @@ struct HomeScreen: View {
 
 struct WorkoutExerciseList: UIViewRepresentable {
     let exercises: [HomeWorkoutExercise]
-    let swipeActions: [SimpleGymRowSwipeAction]
+    let swipeActionsProvider: (HomeWorkoutExercise) -> [SimpleGymRowSwipeAction]
     let onSelect: (HomeWorkoutExercise) -> Void
+
+    init(
+        exercises: [HomeWorkoutExercise],
+        swipeActions: [SimpleGymRowSwipeAction],
+        onSelect: @escaping (HomeWorkoutExercise) -> Void
+    ) {
+        self.exercises = exercises
+        self.swipeActionsProvider = { _ in swipeActions }
+        self.onSelect = onSelect
+    }
+
+    init(
+        exercises: [HomeWorkoutExercise],
+        swipeActionsProvider: @escaping (HomeWorkoutExercise) -> [SimpleGymRowSwipeAction],
+        onSelect: @escaping (HomeWorkoutExercise) -> Void
+    ) {
+        self.exercises = exercises
+        self.swipeActionsProvider = swipeActionsProvider
+        self.onSelect = onSelect
+    }
 
     static func height(for exercises: [HomeWorkoutExercise]) -> CGFloat {
         CGFloat(exercises.count) * SimpleGymRow.height
@@ -540,7 +669,8 @@ extension WorkoutExerciseList {
             _ tableView: UITableView,
             trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
         ) -> UISwipeActionsConfiguration? {
-            let actions = parent.swipeActions.map { swipeAction in
+            let exercise = parent.exercises[indexPath.row]
+            let actions = parent.swipeActionsProvider(exercise).map { swipeAction in
                 let style: UIContextualAction.Style = swipeAction.role == .destructive ? .destructive : .normal
                 let action = UIContextualAction(style: style, title: nil) { _, _, completion in
                     swipeAction.action()

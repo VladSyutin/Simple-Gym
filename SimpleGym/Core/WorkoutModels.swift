@@ -279,27 +279,3 @@ enum ExerciseCatalog {
         "WorkoutIllustrationBack": "Спина",
     ]
 }
-
-func makeDefaultWorkoutExerciseSwipeActions() -> [SimpleGymRowSwipeAction] {
-    [
-        SimpleGymRowSwipeAction(
-            title: "Статистика",
-            systemImage: "chart.xyaxis.line",
-            tint: ColorTokens.accentOrange,
-            symbolPointSize: 17
-        ) {},
-        SimpleGymRowSwipeAction(
-            title: "Редактировать",
-            systemImage: "pencil.line",
-            tint: ColorTokens.accentGray,
-            symbolPointSize: 18
-        ) {},
-        SimpleGymRowSwipeAction(
-            title: "Удалить",
-            systemImage: "trash",
-            tint: ColorTokens.accentRed,
-            role: .destructive,
-            symbolPointSize: 18
-        ) {}
-    ]
-}
