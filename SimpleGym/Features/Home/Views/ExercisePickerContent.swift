@@ -6,10 +6,16 @@ private enum ExercisePickerNavigationDirection {
     case backward
 }
 
-private struct ExercisePickerCategory: Identifiable {
+enum ExerciseCreationKind {
+    case cardio
+    case strength
+}
+
+struct ExercisePickerCategory: Identifiable {
     let title: String
     let imageName: String
-    let exercises: [String]
+    let creationKind: ExerciseCreationKind
+    var exercises: [String]
 
     var id: String { title }
 }
@@ -20,28 +26,40 @@ private struct ExercisePickerExercise: Identifiable {
     var id: String { title }
 }
 
+private struct ExerciseCreationContext: Identifiable {
+    let categoryID: String
+    let categoryTitle: String
+    let creationKind: ExerciseCreationKind
+
+    var id: String { categoryID }
+}
+
 struct ExercisePickerContent: View {
     @Environment(\.dismiss) private var dismiss
 
     let sheetTitle: String
     @Binding var showsTopAccessory: Bool
     let reservedTopAccessoryHeight: CGFloat
+    let onSave: ([HomeWorkoutExercise]) -> Void
 
+    @State private var categories: [ExercisePickerCategory]
     @State private var selectedCategoryID: String?
     @State private var selectedExercisesByCategoryID: [String: Set<String>]
     @State private var navigationDirection: ExercisePickerNavigationDirection = .forward
-
-    private let categories = Self.makeCategories()
+    @State private var creationContext: ExerciseCreationContext?
 
     init(
         sheetTitle: String,
         initialExercises: [HomeWorkoutExercise] = [],
         showsTopAccessory: Binding<Bool> = .constant(true),
-        reservedTopAccessoryHeight: CGFloat = 0
+        reservedTopAccessoryHeight: CGFloat = 0,
+        onSave: @escaping ([HomeWorkoutExercise]) -> Void = { _ in }
     ) {
         self.sheetTitle = sheetTitle
         self._showsTopAccessory = showsTopAccessory
         self.reservedTopAccessoryHeight = reservedTopAccessoryHeight
+        self.onSave = onSave
+        _categories = State(initialValue: Self.makeCategories(merging: initialExercises))
         _selectedExercisesByCategoryID = State(
             initialValue: Self.makeInitialSelections(from: initialExercises)
         )
@@ -78,6 +96,19 @@ struct ExercisePickerContent: View {
             if let selectedCategory {
                 detailBottomBar(for: selectedCategory)
             }
+        }
+        .sheet(item: $creationContext) { context in
+            CreateExerciseSheet(
+                categoryTitle: context.categoryTitle,
+                creationKind: context.creationKind,
+                onCreate: { title in
+                    addCreatedExercise(title, toCategoryID: context.categoryID)
+                }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(38)
+            .presentationBackground(ColorTokens.backgroundPrimary)
         }
     }
 
@@ -174,7 +205,7 @@ struct ExercisePickerContent: View {
                     accessibilityLabel: "Готово",
                     variant: .tinted
                 ) {
-                    dismiss()
+                    saveSelections()
                 }
             } else {
                 Color.clear
@@ -264,7 +295,13 @@ struct ExercisePickerContent: View {
                 title: "Создать упражнение",
                 systemImage: "plus",
                 variant: category.exercises.isEmpty ? .tinted : .clear
-            ) {}
+            ) {
+                creationContext = ExerciseCreationContext(
+                    categoryID: category.id,
+                    categoryTitle: category.title,
+                    creationKind: category.creationKind
+                )
+            }
             .padding(.horizontal, Spacing.xLarge)
             .padding(.top, Spacing.large)
             .padding(.bottom, Spacing.xxSmall)
@@ -317,11 +354,48 @@ struct ExercisePickerContent: View {
         return "Выбрано: \(count)"
     }
 
-    private static func makeCategories() -> [ExercisePickerCategory] {
-        [
+    private func saveSelections() {
+        onSave(flattenSelectedExercises())
+        dismiss()
+    }
+
+    private func addCreatedExercise(_ title: String, toCategoryID categoryID: String) {
+        let normalizedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedTitle.isEmpty else { return }
+
+        if let categoryIndex = categories.firstIndex(where: { $0.id == categoryID }) {
+            if !categories[categoryIndex].exercises.contains(normalizedTitle) {
+                categories[categoryIndex].exercises.append(normalizedTitle)
+            }
+        }
+
+        var selections = selectedExercisesByCategoryID[categoryID] ?? []
+        selections.insert(normalizedTitle)
+        selectedExercisesByCategoryID[categoryID] = selections
+    }
+
+    private func flattenSelectedExercises() -> [HomeWorkoutExercise] {
+        categories.reduce(into: [HomeWorkoutExercise]()) { result, category in
+            let selections = selectedExercisesByCategoryID[category.id] ?? []
+            guard !selections.isEmpty else { return }
+
+            let orderedTitles = category.exercises.filter(selections.contains)
+            let customTitles = selections.subtracting(orderedTitles).sorted()
+
+            let exercises = (orderedTitles + customTitles).map { title in
+                HomeWorkoutExercise(title: title, imageName: category.imageName)
+            }
+
+            result.append(contentsOf: exercises)
+        }
+    }
+
+    private static func makeCategories(merging initialExercises: [HomeWorkoutExercise]) -> [ExercisePickerCategory] {
+        var categories = [
             ExercisePickerCategory(
                 title: "Грудь",
                 imageName: "WorkoutIllustrationBreast",
+                creationKind: .strength,
                 exercises: [
                     "Жим гантелей лёжа на наклонной скамье",
                     "Жим штанги лёжа",
@@ -332,6 +406,7 @@ struct ExercisePickerContent: View {
             ExercisePickerCategory(
                 title: "Кардио",
                 imageName: "WorkoutIllustrationCardio",
+                creationKind: .cardio,
                 exercises: [
                     "Беговая дорожка",
                     "Эллипсоид",
@@ -341,6 +416,7 @@ struct ExercisePickerContent: View {
             ExercisePickerCategory(
                 title: "Ноги",
                 imageName: "WorkoutIllustrationLegs",
+                creationKind: .strength,
                 exercises: [
                     "Приседания со штангой",
                     "Жим ногами",
@@ -350,6 +426,7 @@ struct ExercisePickerContent: View {
             ExercisePickerCategory(
                 title: "Плечи",
                 imageName: "WorkoutIllustrationShoulders",
+                creationKind: .strength,
                 exercises: [
                     "Разведение гантелей в стороны",
                     "Жим гантелей сидя",
@@ -359,6 +436,7 @@ struct ExercisePickerContent: View {
             ExercisePickerCategory(
                 title: "Пресс",
                 imageName: "WorkoutIllustrationPress",
+                creationKind: .strength,
                 exercises: [
                     "Подъём ног к груди в висе",
                     "Скручивания на полу",
@@ -368,11 +446,13 @@ struct ExercisePickerContent: View {
             ExercisePickerCategory(
                 title: "Растяжка",
                 imageName: "WorkoutIllustrationStretching",
+                creationKind: .strength,
                 exercises: []
             ),
             ExercisePickerCategory(
                 title: "Руки",
                 imageName: "WorkoutIllustrationArms",
+                creationKind: .strength,
                 exercises: [
                     "Подъём гантелей на бицепс",
                     "Французский жим лёжа",
@@ -382,6 +462,7 @@ struct ExercisePickerContent: View {
             ExercisePickerCategory(
                 title: "Спина",
                 imageName: "WorkoutIllustrationBack",
+                creationKind: .strength,
                 exercises: [
                     "Вертикальная тяга блока широким хватом к груди",
                     "Тяга штанги в наклоне",
@@ -389,6 +470,22 @@ struct ExercisePickerContent: View {
                 ]
             ),
         ]
+
+        for exercise in initialExercises {
+            guard
+                let categoryTitle = categoryTitleByImageName[exercise.imageName],
+                let categoryIndex = categories.firstIndex(where: { $0.title == categoryTitle })
+            else {
+                continue
+            }
+
+            let normalizedTitle = exercise.title.replacingOccurrences(of: "\n", with: " ")
+            if !categories[categoryIndex].exercises.contains(normalizedTitle) {
+                categories[categoryIndex].exercises.append(normalizedTitle)
+            }
+        }
+
+        return categories
     }
 
     private static func makeInitialSelections(from exercises: [HomeWorkoutExercise]) -> [String: Set<String>] {

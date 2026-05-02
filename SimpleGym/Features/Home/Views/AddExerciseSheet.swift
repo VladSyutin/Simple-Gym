@@ -2,15 +2,21 @@ import SwiftUI
 
 struct AddExerciseSheet: View {
     let initialExercises: [HomeWorkoutExercise]
+    let onSave: ([HomeWorkoutExercise]) -> Void
 
-    init(initialExercises: [HomeWorkoutExercise] = []) {
+    init(
+        initialExercises: [HomeWorkoutExercise] = [],
+        onSave: @escaping ([HomeWorkoutExercise]) -> Void = { _ in }
+    ) {
         self.initialExercises = initialExercises
+        self.onSave = onSave
     }
 
     var body: some View {
         ExercisePickerContent(
             sheetTitle: "Добавление упражнения",
-            initialExercises: initialExercises
+            initialExercises: initialExercises,
+            onSave: onSave
         )
     }
 }

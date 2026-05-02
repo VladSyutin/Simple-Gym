@@ -11,6 +11,7 @@
 		11A16939AF04F685D786C6B3 /* AddWorkoutSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E943F382FC8CF93A4CF77D9 /* AddWorkoutSheet.swift */; };
 		299873677E9E863ECD6DD9F7 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE054EA6C902305A88C5333 /* Spacing.swift */; };
 		2D6C872F51D9927A8D7D4478 /* AddExerciseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F24DA76FB7B7D113D43E971 /* AddExerciseSheet.swift */; };
+		2F01A534FA11BE58509D3C90 /* CreateExerciseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F6FF31970888378795C23AA /* CreateExerciseSheet.swift */; };
 		3A6941A9354E9849381E9A57 /* SimpleGymSwipeActionImageRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0306F8EA6257071384987CA /* SimpleGymSwipeActionImageRenderer.swift */; };
 		42E0DFF960036FD38677DF47 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAF498DE471659F8593B28E /* HomeScreen.swift */; };
 		50B5ACFDBC97418BE7886ECB /* SimpleGymRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF9A42A06926DAD360DD06DE /* SimpleGymRootView.swift */; };
@@ -34,6 +35,7 @@
 		11823809A397DCC29A53F7F3 /* MaterialTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialTokens.swift; sourceTree = "<group>"; };
 		32B5082B5B6F8489270250A6 /* SimpleGymTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymTextField.swift; sourceTree = "<group>"; };
 		37FF7E8E9975F6A6A0303D15 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
+		5F6FF31970888378795C23AA /* CreateExerciseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateExerciseSheet.swift; sourceTree = "<group>"; };
 		5AA2DACC4E77C9EC95B14635 /* Radius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radius.swift; sourceTree = "<group>"; };
 		72F3AE00F372059660317E17 /* ScrollChromeSurfaceModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollChromeSurfaceModifier.swift; sourceTree = "<group>"; };
 		7F24DA76FB7B7D113D43E971 /* AddExerciseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddExerciseSheet.swift; sourceTree = "<group>"; };
@@ -73,6 +75,7 @@
 			children = (
 				7F24DA76FB7B7D113D43E971 /* AddExerciseSheet.swift */,
 				0E943F382FC8CF93A4CF77D9 /* AddWorkoutSheet.swift */,
+				5F6FF31970888378795C23AA /* CreateExerciseSheet.swift */,
 				0EE0B3DF5136BCA63FD61779 /* ExercisePickerContent.swift */,
 				DAAF498DE471659F8593B28E /* HomeScreen.swift */,
 			);
@@ -240,6 +243,7 @@
 				2D6C872F51D9927A8D7D4478 /* AddExerciseSheet.swift in Sources */,
 				11A16939AF04F685D786C6B3 /* AddWorkoutSheet.swift in Sources */,
 				6CE8A848B5348110452AAD2E /* ColorTokens.swift in Sources */,
+				2F01A534FA11BE58509D3C90 /* CreateExerciseSheet.swift in Sources */,
 				9C1360A0F71E1119EF7920AD /* EmptyStateView.swift in Sources */,
 				5F4C16F14120F0096DB2E8EA /* ExercisePickerContent.swift in Sources */,
 				42E0DFF960036FD38677DF47 /* HomeScreen.swift in Sources */,
