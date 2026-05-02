@@ -97,8 +97,35 @@ struct HomeScreen: View {
         let selectedWorkout = workoutSession(for: selectedDate)
         let displayedMonthStart = transitionDisplayedMonthStart ?? resolvedDisplayedMonthStart(for: selectedDate)
         let isCalendarTransitioning = transitionDisplayedMonthStart != nil
+        let calendarHeight = HomeCalendar.height(
+            isExpanded: isCalendarExpanded,
+            displayedMonthStart: displayedMonthStart,
+            showsSectionHeader: selectedWorkout != nil
+        )
 
-        VStack(spacing: 0) {
+        ZStack(alignment: .top) {
+            if let selectedWorkout {
+                workoutContent(
+                    for: selectedWorkout,
+                    selectedDate: selectedDate,
+                    topContentInset: calendarHeight
+                )
+            } else {
+                VStack(spacing: 0) {
+                    Spacer(minLength: Spacing.xxLarge)
+
+                    EmptyStateView(
+                        iconSystemName: "dumbbell.fill",
+                        title: "Нет тренировок",
+                        message: "Добавьте упражнение или программу."
+                    )
+                    .padding(.horizontal, Spacing.large)
+
+                    Spacer()
+                }
+                .padding(.top, calendarHeight)
+            }
+
             HomeCalendar(
                 visibleMonthPageID: $visibleMonthPageID,
                 visibleWeekPageID: $visibleWeekPageID,
@@ -136,21 +163,6 @@ struct HomeScreen: View {
             .onChange(of: visibleWeekPageID) { _, newValue in
                 guard let newValue else { return }
                 syncSelectionForVisibleWeek(newValue, currentDate: currentDate)
-            }
-
-            if let selectedWorkout {
-                workoutContent(for: selectedWorkout, selectedDate: selectedDate)
-            } else {
-                Spacer(minLength: Spacing.xxLarge)
-
-                EmptyStateView(
-                    iconSystemName: "dumbbell.fill",
-                    title: "Нет тренировок",
-                    message: "Добавьте упражнение или программу."
-                )
-                .padding(.horizontal, Spacing.large)
-
-                Spacer()
             }
         }
         .animation(calendarLayoutTransitionAnimation, value: isCalendarExpanded)
@@ -258,7 +270,11 @@ struct HomeScreen: View {
     }
 
     @ViewBuilder
-    private func workoutContent(for workout: HomeWorkoutSession, selectedDate: Date) -> some View {
+    private func workoutContent(
+        for workout: HomeWorkoutSession,
+        selectedDate: Date,
+        topContentInset: CGFloat
+    ) -> some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
                 WorkoutExerciseList(
@@ -280,9 +296,11 @@ struct HomeScreen: View {
                 )
             }
             .frame(maxWidth: .infinity, alignment: .top)
+            .padding(.top, topContentInset)
             .padding(.bottom, Spacing.xxxLarge)
         }
         .scrollIndicators(.hidden)
+        .scrollEdgeEffectStyle(.hard, for: .top)
         .contentShape(Rectangle())
         .onTapGesture {
             isCommentFieldFocused = false
@@ -857,6 +875,21 @@ private struct HomeCalendar: View {
         calendar.weekIndex(of: selectedDate, inMonthContaining: displayedMonthStart)
     }
 
+    static func height(
+        isExpanded: Bool,
+        displayedMonthStart: Date,
+        showsSectionHeader: Bool
+    ) -> CGFloat {
+        let metrics = CalendarLayoutMetrics(width: 0)
+        let weekCount = max(simpleGymCalendar.weeksInMonth(containing: displayedMonthStart), 1)
+        let weeksHeight = isExpanded
+            ? metrics.monthGridHeight(weekCount: weekCount)
+            : metrics.weekHeight
+        let sectionHeaderHeight = showsSectionHeader ? metrics.sectionHeaderHeight : 0
+
+        return metrics.monthRowHeight + metrics.weekdayRowHeight + weeksHeight + sectionHeaderHeight
+    }
+
     var body: some View {
         GeometryReader { geometry in
             let metrics = CalendarLayoutMetrics(width: geometry.size.width)
@@ -928,12 +961,11 @@ private struct HomeCalendar: View {
     }
 
     private var totalHeight: CGFloat {
-        let metrics = CalendarLayoutMetrics(width: 0)
-        let weeksHeight = isExpanded
-            ? metrics.monthGridHeight(weekCount: presentedExpandedWeekCount)
-            : metrics.weekHeight
-        let sectionHeaderHeight = sectionTitle == nil ? 0 : metrics.sectionHeaderHeight
-        return metrics.monthRowHeight + metrics.weekdayRowHeight + weeksHeight + sectionHeaderHeight
+        Self.height(
+            isExpanded: isExpanded,
+            displayedMonthStart: displayedMonthStart,
+            showsSectionHeader: sectionTitle != nil
+        )
     }
 
     @ViewBuilder

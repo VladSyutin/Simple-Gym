@@ -2,19 +2,15 @@ import SwiftUI
 
 private struct ScrollChromeSurfaceBackground: View {
     var body: some View {
-        ZStack {
-            ColorTokens.backgroundPrimary
-
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .opacity(0.35)
-        }
+        Rectangle()
+            .fill(.bar)
     }
 }
 
 struct ScrollChromeSurfaceModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
+            .scrollEdgeEffectStyle(.hard, for: .all)
             .background {
                 ScrollChromeSurfaceBackground()
                     .ignoresSafeArea(edges: .top)
