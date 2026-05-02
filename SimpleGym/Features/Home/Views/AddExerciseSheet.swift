@@ -24,13 +24,13 @@ struct AddExerciseSheet: View {
 #Preview {
     AddExerciseSheet(
         initialExercises: [
-            HomeWorkoutExercise(title: "Жим гантелей лёжа на наклонной скамье", imageName: "WorkoutIllustrationBreast"),
-            HomeWorkoutExercise(title: "Беговая дорожка", imageName: "WorkoutIllustrationCardio"),
-            HomeWorkoutExercise(title: "Приседания со штангой", imageName: "WorkoutIllustrationLegs"),
-            HomeWorkoutExercise(title: "Разведение гантелей в стороны", imageName: "WorkoutIllustrationShoulders"),
-            HomeWorkoutExercise(title: "Подъём ног к груди в висе", imageName: "WorkoutIllustrationPress"),
-            HomeWorkoutExercise(title: "Подъём гантелей на бицепс", imageName: "WorkoutIllustrationArms"),
-            HomeWorkoutExercise(title: "Вертикальная тяга блока широким хватом к груди", imageName: "WorkoutIllustrationBack"),
+            HomeWorkoutExercise(title: "Жим гантелей лёжа на наклонной скамье", imageName: "WorkoutIllustrationBreast", kind: .strength),
+            HomeWorkoutExercise(title: "Беговая дорожка", imageName: "WorkoutIllustrationCardio", kind: .cardio),
+            HomeWorkoutExercise(title: "Приседания со штангой", imageName: "WorkoutIllustrationLegs", kind: .strength),
+            HomeWorkoutExercise(title: "Разведение гантелей в стороны", imageName: "WorkoutIllustrationShoulders", kind: .strength),
+            HomeWorkoutExercise(title: "Подъём ног к груди в висе", imageName: "WorkoutIllustrationPress", kind: .strength),
+            HomeWorkoutExercise(title: "Подъём гантелей на бицепс", imageName: "WorkoutIllustrationArms", kind: .strength),
+            HomeWorkoutExercise(title: "Вертикальная тяга блока широким хватом к груди", imageName: "WorkoutIllustrationBack", kind: .strength),
         ]
     )
         .presentationDetents([.large])
