@@ -1,78 +1,37 @@
 import SwiftUI
 
-private struct AddExerciseCategory: Identifiable {
-    let title: String
-    let imageName: String
-
-    var id: String { title }
-}
-
 struct AddExerciseSheet: View {
-    @Environment(\.dismiss) private var dismiss
+    let initialExercises: [HomeWorkoutExercise]
+    let onSave: ([HomeWorkoutExercise]) -> Void
 
-    private let categories: [AddExerciseCategory] = [
-        AddExerciseCategory(title: "Грудь", imageName: "WorkoutIllustrationBreast"),
-        AddExerciseCategory(title: "Кардио", imageName: "WorkoutIllustrationCardio"),
-        AddExerciseCategory(title: "Ноги", imageName: "WorkoutIllustrationLegs"),
-        AddExerciseCategory(title: "Плечи", imageName: "WorkoutIllustrationShoulders"),
-        AddExerciseCategory(title: "Пресс", imageName: "WorkoutIllustrationPress"),
-        AddExerciseCategory(title: "Растяжка", imageName: "WorkoutIllustrationStretching"),
-        AddExerciseCategory(title: "Руки", imageName: "WorkoutIllustrationArms"),
-        AddExerciseCategory(title: "Спина", imageName: "WorkoutIllustrationBack"),
-    ]
+    init(
+        initialExercises: [HomeWorkoutExercise] = [],
+        onSave: @escaping ([HomeWorkoutExercise]) -> Void = { _ in }
+    ) {
+        self.initialExercises = initialExercises
+        self.onSave = onSave
+    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Capsule()
-                .fill(ColorTokens.labelTertiary.opacity(0.55))
-                .frame(width: 36, height: 5)
-                .padding(.top, Spacing.xxSmall)
-                .padding(.bottom, 3)
-                .accessibilityHidden(true)
-
-            ZStack {
-                Text("Добавление упражнения")
-                    .simpleGymTextStyle(.bodyEmphasized)
-                    .frame(maxWidth: .infinity)
-
-                HStack {
-                    LiquidGlassSymbolButton(
-                        systemImage: "xmark",
-                        accessibilityLabel: "Закрыть"
-                    ) {
-                        dismiss()
-                    }
-
-                    Spacer()
-                }
-            }
-            .padding(.horizontal, Spacing.small)
-            .frame(height: 44)
-            .padding(.bottom, Spacing.small)
-
-            ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 0) {
-                    ForEach(categories) { category in
-                        Button {
-                        } label: {
-                            SimpleGymRow(
-                                title: category.title,
-                                imageName: category.imageName
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.bottom, Spacing.xxLarge)
-            }
-            .scrollIndicators(.hidden)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(ColorTokens.backgroundPrimary)
+        ExercisePickerContent(
+            sheetTitle: "Добавление упражнения",
+            initialExercises: initialExercises,
+            onSave: onSave
+        )
     }
 }
 
 #Preview {
-    AddExerciseSheet()
+    AddExerciseSheet(
+        initialExercises: [
+            HomeWorkoutExercise(title: "Жим гантелей лёжа на наклонной скамье", imageName: "WorkoutIllustrationBreast"),
+            HomeWorkoutExercise(title: "Беговая дорожка", imageName: "WorkoutIllustrationCardio"),
+            HomeWorkoutExercise(title: "Приседания со штангой", imageName: "WorkoutIllustrationLegs"),
+            HomeWorkoutExercise(title: "Разведение гантелей в стороны", imageName: "WorkoutIllustrationShoulders"),
+            HomeWorkoutExercise(title: "Подъём ног к груди в висе", imageName: "WorkoutIllustrationPress"),
+            HomeWorkoutExercise(title: "Подъём гантелей на бицепс", imageName: "WorkoutIllustrationArms"),
+            HomeWorkoutExercise(title: "Вертикальная тяга блока широким хватом к груди", imageName: "WorkoutIllustrationBack"),
+        ]
+    )
         .presentationDetents([.large])
 }

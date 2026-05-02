@@ -43,9 +43,8 @@ struct HomeScreen: View {
     @State private var displayedMonthReleaseWorkItem: DispatchWorkItem?
     @State private var activeSheet: HomeSheetDestination?
     @State private var workoutComment = ""
+    @State private var workoutSessionsByDate = HomeScreen.makeWorkoutSessions()
     @FocusState private var isCommentFieldFocused: Bool
-
-    private let workoutSessionsByDate = HomeScreen.makeWorkoutSessions()
 
     private var trainingDates: Set<Date> {
         Set(workoutSessionsByDate.keys)
@@ -146,7 +145,12 @@ struct HomeScreen: View {
                     .presentationCornerRadius(38)
                     .presentationBackground(ColorTokens.backgroundPrimary)
             case .addExercise:
-                AddExerciseSheet()
+                AddExerciseSheet(
+                    initialExercises: selectedWorkout?.exercises ?? [],
+                    onSave: { exercises in
+                        updateExercises(exercises, for: selectedDate)
+                    }
+                )
                     .presentationDetents([.large])
                     .presentationDragIndicator(.hidden)
                     .presentationCornerRadius(38)
@@ -258,6 +262,16 @@ struct HomeScreen: View {
         }
     }
 
+    private func updateExercises(_ exercises: [HomeWorkoutExercise], for date: Date) {
+        let normalizedDate = simpleGymCalendar.startOfDay(for: date)
+        guard let existingWorkout = workoutSessionsByDate[normalizedDate] else { return }
+
+        workoutSessionsByDate[normalizedDate] = HomeWorkoutSession(
+            title: existingWorkout.title,
+            exercises: exercises
+        )
+    }
+
     private func jumpToToday(currentDate: Date) {
         let today = simpleGymCalendar.startOfDay(for: currentDate)
         let todayMonthStart = simpleGymCalendar.startOfMonth(for: today)
@@ -331,8 +345,8 @@ struct HomeScreen: View {
                 title: "Произвольная тренировка",
                 exercises: [
                     HomeWorkoutExercise(title: "Приседания со штангой", imageName: "WorkoutIllustrationLegs"),
-                    HomeWorkoutExercise(title: "Жим гантелей лёжа\nна наклонной скамье", imageName: "WorkoutIllustrationBreast"),
-                    HomeWorkoutExercise(title: "Вертикальная тяга блока\nшироким хватом к груди", imageName: "WorkoutIllustrationBack"),
+                    HomeWorkoutExercise(title: "Жим гантелей лёжа на наклонной скамье", imageName: "WorkoutIllustrationBreast"),
+                    HomeWorkoutExercise(title: "Вертикальная тяга блока широким хватом к груди", imageName: "WorkoutIllustrationBack"),
                     HomeWorkoutExercise(title: "Подъём гантелей на бицепс", imageName: "WorkoutIllustrationArms"),
                     HomeWorkoutExercise(title: "Разведение гантелей в стороны", imageName: "WorkoutIllustrationShoulders"),
                     HomeWorkoutExercise(title: "Подъём ног к груди в висе", imageName: "WorkoutIllustrationPress"),
@@ -444,7 +458,7 @@ extension HomeWorkoutExerciseList {
                 }
 
                 action.backgroundColor = .clear
-                action.image = HomeWorkoutExerciseSwipeActionImage.make(for: swipeAction)
+                action.image = SimpleGymSwipeActionImageRenderer.make(for: swipeAction)
 
                 return action
             }
@@ -519,50 +533,6 @@ private final class HomeWorkoutExerciseCell: UITableViewCell {
             )
         }
         .margins(.all, 0)
-    }
-}
-
-private enum HomeWorkoutExerciseSwipeActionImage {
-    private static let buttonDiameter: CGFloat = 50
-    private static let buttonHorizontalInset: CGFloat = 5
-    private static let canvasSize = CGSize(
-        width: buttonDiameter + buttonHorizontalInset * 2,
-        height: buttonDiameter
-    )
-
-    static func make(for swipeAction: SimpleGymRowSwipeAction) -> UIImage? {
-        let renderer = UIGraphicsImageRenderer(size: canvasSize)
-        let circleRect = CGRect(
-            x: buttonHorizontalInset,
-            y: 0,
-            width: buttonDiameter,
-            height: buttonDiameter
-        )
-        let symbolConfiguration = UIImage.SymbolConfiguration(
-            pointSize: swipeAction.symbolPointSize,
-            weight: .regular
-        )
-        let symbolImage = UIImage(
-            systemName: swipeAction.systemImage,
-            withConfiguration: symbolConfiguration
-        )?.withTintColor(.white, renderingMode: .alwaysOriginal)
-
-        return renderer.image { _ in
-            let circlePath = UIBezierPath(ovalIn: circleRect)
-            UIColor(swipeAction.tint).setFill()
-            circlePath.fill()
-
-            guard let symbolImage else { return }
-
-            let symbolRect = CGRect(
-                x: circleRect.midX - symbolImage.size.width / 2,
-                y: circleRect.midY - symbolImage.size.height / 2,
-                width: symbolImage.size.width,
-                height: symbolImage.size.height
-            )
-            symbolImage.draw(in: symbolRect)
-        }
-        .withRenderingMode(.alwaysOriginal)
     }
 }
 

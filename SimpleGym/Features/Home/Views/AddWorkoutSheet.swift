@@ -16,46 +16,53 @@ private enum AddWorkoutSheetTab: String, CaseIterable, Identifiable {
     }
 }
 
-private struct AddWorkoutExerciseCategory: Identifiable {
-    let title: String
-    let imageName: String
-
-    var id: String { title }
-}
-
 struct AddWorkoutSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTab: AddWorkoutSheetTab = .exercises
+    @State private var showsExerciseTabSwitcher = true
 
-    private let exerciseCategories: [AddWorkoutExerciseCategory] = [
-        AddWorkoutExerciseCategory(title: "Грудь", imageName: "WorkoutIllustrationBreast"),
-        AddWorkoutExerciseCategory(title: "Кардио", imageName: "WorkoutIllustrationCardio"),
-        AddWorkoutExerciseCategory(title: "Ноги", imageName: "WorkoutIllustrationLegs"),
-        AddWorkoutExerciseCategory(title: "Плечи", imageName: "WorkoutIllustrationShoulders"),
-        AddWorkoutExerciseCategory(title: "Пресс", imageName: "WorkoutIllustrationPress"),
-        AddWorkoutExerciseCategory(title: "Растяжка", imageName: "WorkoutIllustrationStretching"),
-        AddWorkoutExerciseCategory(title: "Руки", imageName: "WorkoutIllustrationArms"),
-        AddWorkoutExerciseCategory(title: "Спина", imageName: "WorkoutIllustrationBack"),
-    ]
+    private enum Metrics {
+        static let externalSegmentedTopInset: CGFloat = 78
+        static let externalSegmentedReservedHeight: CGFloat = 44
+    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            grabber
-            toolbar
-            segmentedControl
-
+        ZStack(alignment: .top) {
             Group {
                 switch selectedTab {
                 case .exercises:
-                    exerciseList
+                    ExercisePickerContent(
+                        sheetTitle: "Добавление тренировки",
+                        showsTopAccessory: $showsExerciseTabSwitcher,
+                        reservedTopAccessoryHeight: Metrics.externalSegmentedReservedHeight
+                    )
                 case .programs:
-                    programsEmptyState
+                    VStack(spacing: 0) {
+                        grabber
+                        toolbar
+                        Color.clear
+                            .frame(height: Metrics.externalSegmentedReservedHeight)
+                            .accessibilityHidden(true)
+                        programsEmptyState
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+            if shouldShowSegmentedControl {
+                segmentedControl
+                    .padding(.top, Metrics.externalSegmentedTopInset)
+                    .transition(
+                        .asymmetric(
+                            insertion: .move(edge: .leading),
+                            removal: .move(edge: .leading)
+                        )
+                    )
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(ColorTokens.backgroundPrimary)
+        .animation(.easeInOut(duration: 0.28), value: shouldShowSegmentedControl)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if selectedTab == .programs {
                 VStack(spacing: 0) {
@@ -82,6 +89,15 @@ struct AddWorkoutSheet: View {
                 }
             }
         }
+        .onChange(of: selectedTab) { _, newValue in
+            if newValue == .programs {
+                showsExerciseTabSwitcher = true
+            }
+        }
+    }
+
+    private var shouldShowSegmentedControl: Bool {
+        selectedTab == .programs || showsExerciseTabSwitcher
     }
 
     private var grabber: some View {
@@ -111,8 +127,8 @@ struct AddWorkoutSheet: View {
             }
         }
         .padding(.horizontal, Spacing.small)
-        .frame(height: 44)
-        .padding(.bottom, Spacing.small)
+        .frame(height: 54)
+        .padding(.bottom, Spacing.xxSmall)
     }
 
     private var segmentedControl: some View {
@@ -123,26 +139,7 @@ struct AddWorkoutSheet: View {
         }
         .pickerStyle(.segmented)
         .padding(.horizontal, Spacing.small)
-        .padding(.bottom, Spacing.small)
-    }
-
-    private var exerciseList: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            LazyVStack(spacing: 0) {
-                ForEach(exerciseCategories) { category in
-                    Button {
-                    } label: {
-                        SimpleGymRow(
-                            title: category.title,
-                            imageName: category.imageName
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.bottom, Spacing.xxLarge)
-        }
-        .scrollIndicators(.hidden)
+        .frame(height: Metrics.externalSegmentedReservedHeight)
     }
 
     private var programsEmptyState: some View {

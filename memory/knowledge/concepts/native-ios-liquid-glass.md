@@ -16,6 +16,7 @@
 - Сначала искать платформенный эквивалент Figma-решению, а уже потом собирать кастомную реализацию.
 - Проверять, что визуальный стек не ухудшает читаемость, контраст и скорость взаимодействия.
 - Для reminders-like swipe-взаимодействий в списках, где SwiftUI не воспроизводит reveal-state корректно, предпочтительнее UIKit-backed `UITableView`/`UICollectionView` cell с системными swipe actions и отдельным background view, который остаётся на месте, пока content view уезжает.
+- Для системного `.segmented` в sheet flows важно сохранять один persistent instance control-а; если segmented пересоздаётся в разных subtree, нативная liquid-glass анимация sliding indicator может пропасть.
 
 ## Known Pitfalls
 
@@ -32,6 +33,7 @@
 
 - [[memory/knowledge/decisions/adr-0001-native-ios-over-custom-recreation]]
 - [[memory/knowledge/decisions/adr-0002-ios-26-minimum-deployment-target]]
+- [[memory/knowledge/decisions/adr-0003-persistent-native-segmented-control-in-sheets]]
 
 ## Related Concepts
 
