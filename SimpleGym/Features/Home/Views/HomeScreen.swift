@@ -34,6 +34,30 @@ private enum HomeSheetDestination: Identifiable {
     }
 }
 
+func makeDefaultWorkoutExerciseSwipeActions() -> [SimpleGymRowSwipeAction] {
+    [
+        SimpleGymRowSwipeAction(
+            title: "Статистика",
+            systemImage: "chart.xyaxis.line",
+            tint: ColorTokens.accentOrange,
+            symbolPointSize: 17
+        ) {},
+        SimpleGymRowSwipeAction(
+            title: "Редактировать",
+            systemImage: "pencil.line",
+            tint: ColorTokens.accentGray,
+            symbolPointSize: 18
+        ) {},
+        SimpleGymRowSwipeAction(
+            title: "Удалить",
+            systemImage: "trash",
+            tint: ColorTokens.accentRed,
+            role: .destructive,
+            symbolPointSize: 18
+        ) {}
+    ]
+}
+
 struct HomeScreen: View {
     @State private var isCalendarExpanded = false
     @State private var userSelectedDate: Date?
@@ -163,12 +187,12 @@ struct HomeScreen: View {
     private func workoutContent(for workout: HomeWorkoutSession) -> some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
-                HomeWorkoutExerciseList(
+                WorkoutExerciseList(
                     exercises: workout.exercises,
-                    swipeActions: exerciseRowSwipeActions
+                    swipeActions: makeDefaultWorkoutExerciseSwipeActions()
                 )
                 .frame(maxWidth: .infinity)
-                .frame(height: HomeWorkoutExerciseList.height(for: workout.exercises))
+                .frame(height: WorkoutExerciseList.height(for: workout.exercises))
 
                 SimpleGymTextField(
                     prompt: "Комментарий",
@@ -184,30 +208,6 @@ struct HomeScreen: View {
         .onTapGesture {
             isCommentFieldFocused = false
         }
-    }
-
-    private var exerciseRowSwipeActions: [SimpleGymRowSwipeAction] {
-        [
-            SimpleGymRowSwipeAction(
-                title: "Статистика",
-                systemImage: "chart.xyaxis.line",
-                tint: ColorTokens.accentOrange,
-                symbolPointSize: 17
-            ) {},
-            SimpleGymRowSwipeAction(
-                title: "Редактировать",
-                systemImage: "pencil.line",
-                tint: ColorTokens.accentGray,
-                symbolPointSize: 18
-            ) {},
-            SimpleGymRowSwipeAction(
-                title: "Удалить",
-                systemImage: "trash",
-                tint: ColorTokens.accentRed,
-                role: .destructive,
-                symbolPointSize: 18
-            ) {}
-        ]
     }
 
     private func selectedDate(for currentDate: Date) -> Date {
@@ -369,7 +369,7 @@ struct HomeWorkoutExercise: Identifiable {
     var id: String { title }
 }
 
-private struct HomeWorkoutExerciseList: UIViewRepresentable {
+struct WorkoutExerciseList: UIViewRepresentable {
     let exercises: [HomeWorkoutExercise]
     let swipeActions: [SimpleGymRowSwipeAction]
 
@@ -385,7 +385,7 @@ private struct HomeWorkoutExerciseList: UIViewRepresentable {
         let tableView = UITableView(frame: .zero, style: .plain)
         tableView.dataSource = context.coordinator
         tableView.delegate = context.coordinator
-        tableView.register(HomeWorkoutExerciseCell.self, forCellReuseIdentifier: Coordinator.reuseIdentifier)
+        tableView.register(WorkoutExerciseCell.self, forCellReuseIdentifier: Coordinator.reuseIdentifier)
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .none
         tableView.isScrollEnabled = false
@@ -411,13 +411,13 @@ private struct HomeWorkoutExerciseList: UIViewRepresentable {
     }
 }
 
-extension HomeWorkoutExerciseList {
+extension WorkoutExerciseList {
     final class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate {
-        static let reuseIdentifier = "HomeWorkoutExerciseCell"
+        static let reuseIdentifier = "WorkoutExerciseCell"
 
-        var parent: HomeWorkoutExerciseList
+        var parent: WorkoutExerciseList
 
-        init(parent: HomeWorkoutExerciseList) {
+        init(parent: WorkoutExerciseList) {
             self.parent = parent
         }
 
@@ -429,7 +429,7 @@ extension HomeWorkoutExerciseList {
             guard let cell = tableView.dequeueReusableCell(
                 withIdentifier: Self.reuseIdentifier,
                 for: indexPath
-            ) as? HomeWorkoutExerciseCell else {
+            ) as? WorkoutExerciseCell else {
                 return UITableViewCell()
             }
             let exercise = parent.exercises[indexPath.row]
@@ -470,7 +470,7 @@ extension HomeWorkoutExerciseList {
     }
 }
 
-private final class HomeWorkoutExerciseCell: UITableViewCell {
+private final class WorkoutExerciseCell: UITableViewCell {
     private static let maximumSwipeRevealWidth: CGFloat = 180
 
     private var exercise: HomeWorkoutExercise?
