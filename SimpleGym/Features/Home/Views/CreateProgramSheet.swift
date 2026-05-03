@@ -99,6 +99,7 @@ struct ProgramEditorContent: View {
         .padding(.horizontal, Spacing.small)
         .frame(height: 54)
         .padding(.bottom, Spacing.xxSmall)
+        .topScrollChromeSurface()
     }
 
     private var content: some View {

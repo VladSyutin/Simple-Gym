@@ -40,8 +40,7 @@ struct CreateExerciseSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            grabber
-            toolbar
+            topChrome
             content
             Spacer(minLength: 0)
         }
@@ -59,6 +58,14 @@ struct CreateExerciseSheet: View {
             .padding(.top, Spacing.xxSmall)
             .padding(.bottom, 3)
             .accessibilityHidden(true)
+    }
+
+    private var topChrome: some View {
+        VStack(spacing: 0) {
+            grabber
+            toolbar
+        }
+        .topScrollChromeSurface()
     }
 
     private var toolbar: some View {
