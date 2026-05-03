@@ -211,7 +211,9 @@ struct ProgramEditorContent: View {
     }
 
     private func deleteExercise(_ exercise: HomeWorkoutExercise) {
-        exercises.removeAll { $0.id == exercise.id }
+        withAnimation(.easeInOut(duration: 0.22)) {
+            exercises.removeAll { $0.id == exercise.id }
+        }
     }
 
     private func moveExercises(from source: IndexSet, to destination: Int) {

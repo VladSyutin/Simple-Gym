@@ -12,7 +12,7 @@
 		11A16939AF04F685D786C6B3 /* AddWorkoutSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E943F382FC8CF93A4CF77D9 /* AddWorkoutSheet.swift */; };
 		299873677E9E863ECD6DD9F7 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE054EA6C902305A88C5333 /* Spacing.swift */; };
 		2D6C872F51D9927A8D7D4478 /* AddExerciseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F24DA76FB7B7D113D43E971 /* AddExerciseSheet.swift */; };
-		3A6941A9354E9849381E9A57 /* SimpleGymSwipeActionImageRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0306F8EA6257071384987CA /* SimpleGymSwipeActionImageRenderer.swift */; };
+		3A6941A9354E9849381E9A57 /* SimpleGymSwipeActionsConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0306F8EA6257071384987CA /* SimpleGymSwipeActionsConfiguration.swift */; };
 		42E0DFF960036FD38677DF47 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAF498DE471659F8593B28E /* HomeScreen.swift */; };
 		50B5ACFDBC97418BE7886ECB /* SimpleGymRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF9A42A06926DAD360DD06DE /* SimpleGymRootView.swift */; };
 		53AC6719FE77374BEA48AEB3 /* CreateExerciseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2494136680AC52FF8F6CA700 /* CreateExerciseSheet.swift */; };
@@ -57,7 +57,7 @@
 		DA13816C4F0AB6513D52DEAE /* WorkoutApproachRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutApproachRow.swift; sourceTree = "<group>"; };
 		DAAF498DE471659F8593B28E /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		DB822A65C3FD2502312EDF0C /* SimpleGymApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymApp.swift; sourceTree = "<group>"; };
-		E0306F8EA6257071384987CA /* SimpleGymSwipeActionImageRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymSwipeActionImageRenderer.swift; sourceTree = "<group>"; };
+		E0306F8EA6257071384987CA /* SimpleGymSwipeActionsConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymSwipeActionsConfiguration.swift; sourceTree = "<group>"; };
 		F8D49C63EA483A20A87B9B39 /* LiquidGlassButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassButton.swift; sourceTree = "<group>"; };
 		FEEE69EA5E1BDDE33D14454D /* WorkoutExecutionScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutExecutionScreen.swift; sourceTree = "<group>"; };
 		FF9A42A06926DAD360DD06DE /* SimpleGymRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleGymRootView.swift; sourceTree = "<group>"; };
@@ -125,7 +125,7 @@
 				939536601713B21A62DED900 /* EmptyStateView.swift */,
 				F8D49C63EA483A20A87B9B39 /* LiquidGlassButton.swift */,
 				7F746A96D6DCBB6AE63F0E1A /* SimpleGymRow.swift */,
-				E0306F8EA6257071384987CA /* SimpleGymSwipeActionImageRenderer.swift */,
+				E0306F8EA6257071384987CA /* SimpleGymSwipeActionsConfiguration.swift */,
 				32B5082B5B6F8489270250A6 /* SimpleGymTextField.swift */,
 			);
 			path = Components;
@@ -295,7 +295,7 @@
 				C6C8D675155D641A5A30E49F /* SimpleGymApp.swift in Sources */,
 				50B5ACFDBC97418BE7886ECB /* SimpleGymRootView.swift in Sources */,
 				8B70C16B411BFE467D7C9681 /* SimpleGymRow.swift in Sources */,
-				3A6941A9354E9849381E9A57 /* SimpleGymSwipeActionImageRenderer.swift in Sources */,
+				3A6941A9354E9849381E9A57 /* SimpleGymSwipeActionsConfiguration.swift in Sources */,
 				D1B689B9A90E8425C9C56DD4 /* SimpleGymTextField.swift in Sources */,
 				299873677E9E863ECD6DD9F7 /* Spacing.swift in Sources */,
 				C34F59A4BD2AE90AB0C435B5 /* TextStyleModifier.swift in Sources */,

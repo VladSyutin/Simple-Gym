@@ -459,7 +459,9 @@ struct ExercisePickerContent: View {
             return
         }
 
-        categories[categoryIndex].exercises.removeAll { $0 == title }
+        withAnimation(.easeInOut(duration: 0.22)) {
+            categories[categoryIndex].exercises.removeAll { $0 == title }
+        }
 
         guard var selections = selectedExercisesByCategoryID[categoryID] else { return }
         selections.remove(title)
@@ -529,7 +531,7 @@ private struct ExercisePickerExerciseList: UIViewRepresentable {
     func updateUIView(_ tableView: UITableView, context: Context) {
         context.coordinator.parent = self
         tableView.contentInset.top = topContentInset
-        tableView.reloadData()
+        context.coordinator.syncDisplayedExercises(with: exercises, in: tableView)
     }
 }
 
@@ -538,13 +540,40 @@ extension ExercisePickerExerciseList {
         static let reuseIdentifier = "ExercisePickerExerciseCell"
 
         var parent: ExercisePickerExerciseList
+        private var displayedExercises: [ExercisePickerExercise]
 
         init(parent: ExercisePickerExerciseList) {
             self.parent = parent
+            self.displayedExercises = parent.exercises
+        }
+
+        func syncDisplayedExercises(with exercises: [ExercisePickerExercise], in tableView: UITableView) {
+            let oldTitles = displayedExercises.map(\.title)
+            let newTitles = exercises.map(\.title)
+
+            guard oldTitles != newTitles else {
+                displayedExercises = exercises
+                tableView.reloadData()
+                return
+            }
+
+            if
+                oldTitles.count == newTitles.count + 1,
+                let deletedRow = oldTitles.firstIndex(where: { !newTitles.contains($0) })
+            {
+                displayedExercises = exercises
+                tableView.deleteRows(
+                    at: [IndexPath(row: deletedRow, section: 0)],
+                    with: .automatic
+                )
+            } else {
+                displayedExercises = exercises
+                tableView.reloadData()
+            }
         }
 
         func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-            parent.exercises.count
+            displayedExercises.count
         }
 
         func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -555,7 +584,7 @@ extension ExercisePickerExerciseList {
                 return UITableViewCell()
             }
 
-            let exercise = parent.exercises[indexPath.row]
+            let exercise = displayedExercises[indexPath.row]
             cell.configure(
                 with: exercise,
                 isSelected: parent.selectedExerciseTitles.contains(exercise.title)
@@ -564,38 +593,51 @@ extension ExercisePickerExerciseList {
         }
 
         func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-            let exercise = parent.exercises[indexPath.row]
+            let exercise = displayedExercises[indexPath.row]
             parent.onSelect(exercise.title)
             tableView.deselectRow(at: indexPath, animated: true)
+        }
+
+        func tableView(_ tableView: UITableView, willBeginEditingRowAt indexPath: IndexPath) {
+            (tableView.cellForRow(at: indexPath) as? ExercisePickerExerciseCell)?
+                .setSwipeBackgroundVisible(true, animated: true)
+        }
+
+        func tableView(_ tableView: UITableView, didEndEditingRowAt indexPath: IndexPath?) {
+            if let indexPath {
+                (tableView.cellForRow(at: indexPath) as? ExercisePickerExerciseCell)?
+                    .setSwipeBackgroundVisible(false, animated: true)
+            } else {
+                tableView.visibleCells
+                    .compactMap { $0 as? ExercisePickerExerciseCell }
+                    .forEach { $0.setSwipeBackgroundVisible(false, animated: true) }
+            }
         }
 
         func tableView(
             _ tableView: UITableView,
             trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
         ) -> UISwipeActionsConfiguration? {
-            let exercise = parent.exercises[indexPath.row]
-            let actions = parent.swipeActionsProvider(exercise.title).map { swipeAction in
-                let style: UIContextualAction.Style = swipeAction.role == .destructive ? .destructive : .normal
-                let action = UIContextualAction(style: style, title: nil) { _, _, completion in
-                    swipeAction.action()
-                    completion(true)
-                }
+            let exercise = displayedExercises[indexPath.row]
 
-                action.backgroundColor = .clear
-                action.image = SimpleGymSwipeActionImageRenderer.make(for: swipeAction)
-                return action
+            return SimpleGymSwipeActionsConfiguration.make(
+                actions: parent.swipeActionsProvider(exercise.title)
+            ) { swipeAction, completion in
+                swipeAction.action()
+                completion(true)
             }
-
-            let configuration = UISwipeActionsConfiguration(actions: actions)
-            configuration.performsFirstActionWithFullSwipe = false
-            return configuration
         }
     }
 }
 
 private final class ExercisePickerExerciseCell: UITableViewCell {
+    private static let maximumSwipeRevealWidth: CGFloat = 180
+    private static let swipeBackgroundCornerRadius: CGFloat = 20
+
     private var exercise: ExercisePickerExercise?
     private var isExerciseSelected = false
+    private var swipeRevealProgress: CGFloat = 0
+    private var isSwipeBackgroundForcedVisible = false
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -624,7 +666,62 @@ private final class ExercisePickerExerciseCell: UITableViewCell {
         super.prepareForReuse()
         exercise = nil
         isExerciseSelected = false
+        swipeRevealProgress = 0
+        isSwipeBackgroundForcedVisible = false
+        applySimpleGymSwipeBackground(
+            progress: swipeRevealProgress,
+            cornerRadius: Self.swipeBackgroundCornerRadius
+        )
         contentConfiguration = nil
+    }
+
+    func setSwipeBackgroundVisible(_ isVisible: Bool, animated: Bool) {
+        let progress: CGFloat = isVisible ? 1 : 0
+        guard abs(progress - swipeRevealProgress) > 0.001 else { return }
+
+        isSwipeBackgroundForcedVisible = isVisible
+
+        let updateBackground = {
+            self.swipeRevealProgress = progress
+            self.applySimpleGymSwipeBackground(
+                progress: progress,
+                cornerRadius: Self.swipeBackgroundCornerRadius
+            )
+            self.applyContentConfiguration()
+        }
+
+        if animated {
+            UIView.transition(
+                with: contentView,
+                duration: 0.18,
+                options: [.transitionCrossDissolve, .allowUserInteraction],
+                animations: updateBackground
+            )
+        } else {
+            updateBackground()
+        }
+    }
+
+    override func setEditing(_ editing: Bool, animated: Bool) {
+        super.setEditing(editing, animated: animated)
+        setSwipeBackgroundVisible(editing, animated: animated)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        let progress = isSwipeBackgroundForcedVisible
+            ? 1
+            : simpleGymSwipeRevealProgress(maximumRevealWidth: Self.maximumSwipeRevealWidth)
+
+        guard abs(progress - swipeRevealProgress) > 0.001 else { return }
+
+        swipeRevealProgress = progress
+        applySimpleGymSwipeBackground(
+            progress: swipeRevealProgress,
+            cornerRadius: Self.swipeBackgroundCornerRadius
+        )
+        applyContentConfiguration()
     }
 
     private func applyContentConfiguration() {
@@ -634,7 +731,8 @@ private final class ExercisePickerExerciseCell: UITableViewCell {
             SimpleGymRow(
                 title: exercise.title,
                 showsDisclosureIndicator: false,
-                showsCheckmark: isExerciseSelected
+                showsCheckmark: isExerciseSelected,
+                swipeRevealProgress: swipeRevealProgress
             )
         }
         .margins(.all, 0)

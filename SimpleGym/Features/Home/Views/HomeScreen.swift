@@ -432,15 +432,19 @@ struct HomeScreen: View {
 
         let updatedExercises = workout.exercises.filter { $0.id != exercise.id }
         guard !updatedExercises.isEmpty else {
-            workoutSessionsByDate.removeValue(forKey: normalizedDate)
+            withAnimation(.easeInOut(duration: 0.22)) {
+                _ = workoutSessionsByDate.removeValue(forKey: normalizedDate)
+            }
             return
         }
 
-        workoutSessionsByDate[normalizedDate] = HomeWorkoutSession(
-            title: workout.title,
-            kind: workout.kind,
-            exercises: updatedExercises
-        )
+        withAnimation(.easeInOut(duration: 0.22)) {
+            workoutSessionsByDate[normalizedDate] = HomeWorkoutSession(
+                title: workout.title,
+                kind: workout.kind,
+                exercises: updatedExercises
+            )
+        }
     }
 
     private func moveExercises(from source: IndexSet, to destination: Int, forWorkoutOn date: Date) {
@@ -690,9 +694,8 @@ struct WorkoutExerciseList: UIViewRepresentable {
 
     func updateUIView(_ tableView: UITableView, context: Context) {
         context.coordinator.parent = self
-        context.coordinator.syncDisplayedExercises(with: exercises)
+        context.coordinator.syncDisplayedExercises(with: exercises, in: tableView)
         tableView.dragInteractionEnabled = context.coordinator.isReorderingEnabled
-        tableView.reloadData()
     }
 }
 
@@ -712,8 +715,29 @@ extension WorkoutExerciseList {
             self.displayedExercises = parent.exercises
         }
 
-        func syncDisplayedExercises(with exercises: [HomeWorkoutExercise]) {
-            displayedExercises = exercises
+        func syncDisplayedExercises(with exercises: [HomeWorkoutExercise], in tableView: UITableView) {
+            let oldIDs = displayedExercises.map(\.id)
+            let newIDs = exercises.map(\.id)
+
+            guard oldIDs != newIDs else {
+                displayedExercises = exercises
+                tableView.reloadData()
+                return
+            }
+
+            if
+                oldIDs.count == newIDs.count + 1,
+                let deletedRow = oldIDs.firstIndex(where: { !newIDs.contains($0) })
+            {
+                displayedExercises = exercises
+                tableView.deleteRows(
+                    at: [IndexPath(row: deletedRow, section: 0)],
+                    with: .automatic
+                )
+            } else {
+                displayedExercises = exercises
+                tableView.reloadData()
+            }
         }
 
         func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -743,27 +767,34 @@ extension WorkoutExerciseList {
             SimpleGymRow.height
         }
 
+        func tableView(_ tableView: UITableView, willBeginEditingRowAt indexPath: IndexPath) {
+            (tableView.cellForRow(at: indexPath) as? WorkoutExerciseCell)?
+                .setSwipeBackgroundVisible(true, animated: true)
+        }
+
+        func tableView(_ tableView: UITableView, didEndEditingRowAt indexPath: IndexPath?) {
+            if let indexPath {
+                (tableView.cellForRow(at: indexPath) as? WorkoutExerciseCell)?
+                    .setSwipeBackgroundVisible(false, animated: true)
+            } else {
+                tableView.visibleCells
+                    .compactMap { $0 as? WorkoutExerciseCell }
+                    .forEach { $0.setSwipeBackgroundVisible(false, animated: true) }
+            }
+        }
+
         func tableView(
             _ tableView: UITableView,
             trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
         ) -> UISwipeActionsConfiguration? {
             let exercise = displayedExercises[indexPath.row]
-            let actions = parent.swipeActionsProvider(exercise).map { swipeAction in
-                let style: UIContextualAction.Style = swipeAction.role == .destructive ? .destructive : .normal
-                let action = UIContextualAction(style: style, title: nil) { _, _, completion in
-                    swipeAction.action()
-                    completion(true)
-                }
 
-                action.backgroundColor = .clear
-                action.image = SimpleGymSwipeActionImageRenderer.make(for: swipeAction)
-
-                return action
+            return SimpleGymSwipeActionsConfiguration.make(
+                actions: parent.swipeActionsProvider(exercise)
+            ) { swipeAction, completion in
+                swipeAction.action()
+                completion(true)
             }
-
-            let configuration = UISwipeActionsConfiguration(actions: actions)
-            configuration.performsFirstActionWithFullSwipe = false
-            return configuration
         }
 
         func tableView(_ tableView: UITableView, itemsForBeginning session: UIDragSession, at indexPath: IndexPath) -> [UIDragItem] {
@@ -843,11 +874,13 @@ extension WorkoutExerciseList {
 
 private final class WorkoutExerciseCell: UITableViewCell {
     private static let maximumSwipeRevealWidth: CGFloat = 180
+    private static let swipeBackgroundCornerRadius: CGFloat = 20
     private static let liftedCornerRadius: CGFloat = 20
 
     private var exercise: HomeWorkoutExercise?
     private var onTap: (() -> Void)?
     private var swipeRevealProgress: CGFloat = 0
+    private var isSwipeBackgroundForcedVisible = false
     private var isReorderingEnabled = false
     private var showsDisclosureIndicator = true
 
@@ -891,25 +924,63 @@ private final class WorkoutExerciseCell: UITableViewCell {
         exercise = nil
         onTap = nil
         swipeRevealProgress = 0
+        isSwipeBackgroundForcedVisible = false
         isReorderingEnabled = false
         showsDisclosureIndicator = true
+        applySimpleGymSwipeBackground(
+            progress: swipeRevealProgress,
+            cornerRadius: Self.swipeBackgroundCornerRadius
+        )
         contentConfiguration = nil
+    }
+
+    func setSwipeBackgroundVisible(_ isVisible: Bool, animated: Bool) {
+        let progress: CGFloat = isVisible ? 1 : 0
+        guard abs(progress - swipeRevealProgress) > 0.001 else { return }
+
+        isSwipeBackgroundForcedVisible = isVisible
+
+        let updateBackground = {
+            self.swipeRevealProgress = progress
+            self.applySimpleGymSwipeBackground(
+                progress: progress,
+                cornerRadius: Self.swipeBackgroundCornerRadius
+            )
+            self.applyContentConfiguration()
+        }
+
+        if animated {
+            UIView.transition(
+                with: contentView,
+                duration: 0.18,
+                options: [.transitionCrossDissolve, .allowUserInteraction],
+                animations: updateBackground
+            )
+        } else {
+            updateBackground()
+        }
     }
 
     override func setEditing(_ editing: Bool, animated: Bool) {
         super.setEditing(editing, animated: animated)
+        setSwipeBackgroundVisible(editing, animated: animated)
         setNeedsLayout()
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
 
-        let revealWidth = max(0, bounds.width - contentView.frame.maxX)
-        let progress = max(0, min(1, revealWidth / Self.maximumSwipeRevealWidth))
+        let progress = isSwipeBackgroundForcedVisible
+            ? 1
+            : simpleGymSwipeRevealProgress(maximumRevealWidth: Self.maximumSwipeRevealWidth)
 
         guard abs(progress - swipeRevealProgress) > 0.001 else { return }
 
         swipeRevealProgress = progress
+        applySimpleGymSwipeBackground(
+            progress: swipeRevealProgress,
+            cornerRadius: Self.swipeBackgroundCornerRadius
+        )
         applyContentConfiguration()
     }
 
