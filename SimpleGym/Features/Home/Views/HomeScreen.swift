@@ -284,6 +284,9 @@ struct HomeScreen: View {
                     },
                     onSelect: { exercise in
                         openExercise(exercise, forWorkoutOn: selectedDate)
+                    },
+                    onMove: { source, destination in
+                        moveExercises(from: source, to: destination, forWorkoutOn: selectedDate)
                     }
                 )
                 .frame(maxWidth: .infinity)
@@ -438,6 +441,14 @@ struct HomeScreen: View {
             kind: workout.kind,
             exercises: updatedExercises
         )
+    }
+
+    private func moveExercises(from source: IndexSet, to destination: Int, forWorkoutOn date: Date) {
+        let normalizedDate = simpleGymCalendar.startOfDay(for: date)
+        guard var workout = workoutSessionsByDate[normalizedDate] else { return }
+
+        workout.exercises.move(fromOffsets: source, toOffset: destination)
+        workoutSessionsByDate[normalizedDate] = workout
     }
 
     private func openExerciseReplacementSheet(for exercise: HomeWorkoutExercise, on date: Date) {
@@ -610,25 +621,35 @@ struct WorkoutExerciseList: UIViewRepresentable {
     let exercises: [HomeWorkoutExercise]
     let swipeActionsProvider: (HomeWorkoutExercise) -> [SimpleGymRowSwipeAction]
     let onSelect: (HomeWorkoutExercise) -> Void
+    let onMove: ((IndexSet, Int) -> Void)?
+    let showsDisclosureIndicator: Bool
 
     init(
         exercises: [HomeWorkoutExercise],
         swipeActions: [SimpleGymRowSwipeAction],
-        onSelect: @escaping (HomeWorkoutExercise) -> Void
+        onSelect: @escaping (HomeWorkoutExercise) -> Void,
+        onMove: ((IndexSet, Int) -> Void)? = nil,
+        showsDisclosureIndicator: Bool = true
     ) {
         self.exercises = exercises
         self.swipeActionsProvider = { _ in swipeActions }
         self.onSelect = onSelect
+        self.onMove = onMove
+        self.showsDisclosureIndicator = showsDisclosureIndicator
     }
 
     init(
         exercises: [HomeWorkoutExercise],
         swipeActionsProvider: @escaping (HomeWorkoutExercise) -> [SimpleGymRowSwipeAction],
-        onSelect: @escaping (HomeWorkoutExercise) -> Void
+        onSelect: @escaping (HomeWorkoutExercise) -> Void,
+        onMove: ((IndexSet, Int) -> Void)? = nil,
+        showsDisclosureIndicator: Bool = true
     ) {
         self.exercises = exercises
         self.swipeActionsProvider = swipeActionsProvider
         self.onSelect = onSelect
+        self.onMove = onMove
+        self.showsDisclosureIndicator = showsDisclosureIndicator
     }
 
     static func height(for exercises: [HomeWorkoutExercise]) -> CGFloat {
@@ -643,6 +664,8 @@ struct WorkoutExerciseList: UIViewRepresentable {
         let tableView = UITableView(frame: .zero, style: .plain)
         tableView.dataSource = context.coordinator
         tableView.delegate = context.coordinator
+        tableView.dragDelegate = context.coordinator
+        tableView.dropDelegate = context.coordinator
         tableView.allowsSelection = false
         tableView.register(WorkoutExerciseCell.self, forCellReuseIdentifier: Coordinator.reuseIdentifier)
         tableView.backgroundColor = .clear
@@ -655,6 +678,7 @@ struct WorkoutExerciseList: UIViewRepresentable {
         tableView.contentInset = .zero
         tableView.layoutMargins = .zero
         tableView.cellLayoutMarginsFollowReadableWidth = false
+        tableView.dragInteractionEnabled = context.coordinator.isReorderingEnabled
 
         if #available(iOS 15.0, *) {
             tableView.fillerRowHeight = 0
@@ -666,22 +690,34 @@ struct WorkoutExerciseList: UIViewRepresentable {
 
     func updateUIView(_ tableView: UITableView, context: Context) {
         context.coordinator.parent = self
+        context.coordinator.syncDisplayedExercises(with: exercises)
+        tableView.dragInteractionEnabled = context.coordinator.isReorderingEnabled
         tableView.reloadData()
     }
 }
 
 extension WorkoutExerciseList {
-    final class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate {
+    final class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate, UITableViewDragDelegate, UITableViewDropDelegate {
         static let reuseIdentifier = "WorkoutExerciseCell"
 
         var parent: WorkoutExerciseList
+        private var displayedExercises: [HomeWorkoutExercise]
+
+        var isReorderingEnabled: Bool {
+            parent.onMove != nil
+        }
 
         init(parent: WorkoutExerciseList) {
             self.parent = parent
+            self.displayedExercises = parent.exercises
+        }
+
+        func syncDisplayedExercises(with exercises: [HomeWorkoutExercise]) {
+            displayedExercises = exercises
         }
 
         func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-            parent.exercises.count
+            displayedExercises.count
         }
 
         func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -691,11 +727,15 @@ extension WorkoutExerciseList {
             ) as? WorkoutExerciseCell else {
                 return UITableViewCell()
             }
-            let exercise = parent.exercises[indexPath.row]
+            let exercise = displayedExercises[indexPath.row]
 
-            cell.configure(with: exercise) {
+            cell.configure(
+                with: exercise,
+                showsDisclosureIndicator: parent.showsDisclosureIndicator
+            ) {
                 self.parent.onSelect(exercise)
             }
+            cell.setReorderingEnabled(isReorderingEnabled)
             return cell
         }
 
@@ -707,7 +747,7 @@ extension WorkoutExerciseList {
             _ tableView: UITableView,
             trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
         ) -> UISwipeActionsConfiguration? {
-            let exercise = parent.exercises[indexPath.row]
+            let exercise = displayedExercises[indexPath.row]
             let actions = parent.swipeActionsProvider(exercise).map { swipeAction in
                 let style: UIContextualAction.Style = swipeAction.role == .destructive ? .destructive : .normal
                 let action = UIContextualAction(style: style, title: nil) { _, _, completion in
@@ -725,15 +765,91 @@ extension WorkoutExerciseList {
             configuration.performsFirstActionWithFullSwipe = false
             return configuration
         }
+
+        func tableView(_ tableView: UITableView, itemsForBeginning session: UIDragSession, at indexPath: IndexPath) -> [UIDragItem] {
+            guard isReorderingEnabled else { return [] }
+
+            let exercise = displayedExercises[indexPath.row]
+            let dragItem = UIDragItem(itemProvider: NSItemProvider(object: exercise.id.uuidString as NSString))
+            dragItem.localObject = exercise
+            dragItem.previewProvider = { [weak tableView] in
+                guard
+                    let tableView,
+                    let cell = tableView.cellForRow(at: indexPath) as? WorkoutExerciseCell
+                else {
+                    return nil
+                }
+
+                return cell.makeLiftedPreview()
+            }
+            return [dragItem]
+        }
+
+        func tableView(_ tableView: UITableView, dragSessionAllowsMoveOperation session: UIDragSession) -> Bool {
+            isReorderingEnabled
+        }
+
+        func tableView(_ tableView: UITableView, canHandle session: UIDropSession) -> Bool {
+            isReorderingEnabled && session.localDragSession != nil
+        }
+
+        func tableView(_ tableView: UITableView, dropSessionDidUpdate session: UIDropSession, withDestinationIndexPath destinationIndexPath: IndexPath?) -> UITableViewDropProposal {
+            guard isReorderingEnabled, session.localDragSession != nil else {
+                return UITableViewDropProposal(operation: .cancel)
+            }
+
+            return UITableViewDropProposal(operation: .move, intent: .insertAtDestinationIndexPath)
+        }
+
+        func tableView(_ tableView: UITableView, performDropWith coordinator: UITableViewDropCoordinator) {
+            guard
+                isReorderingEnabled,
+                let item = coordinator.items.first,
+                let sourceIndexPath = item.sourceIndexPath
+            else {
+                return
+            }
+
+            let fallbackRow = max(displayedExercises.count - 1, 0)
+            let destinationIndexPath = coordinator.destinationIndexPath ?? IndexPath(row: fallbackRow, section: 0)
+            let destinationOffset = adjustedMoveOffset(from: sourceIndexPath.row, to: destinationIndexPath.row)
+
+            guard sourceIndexPath.row != destinationIndexPath.row else {
+                coordinator.drop(item.dragItem, toRowAt: destinationIndexPath)
+                return
+            }
+
+            tableView.performBatchUpdates {
+                displayedExercises.move(
+                    fromOffsets: IndexSet(integer: sourceIndexPath.row),
+                    toOffset: destinationOffset
+                )
+                parent.onMove?(IndexSet(integer: sourceIndexPath.row), destinationOffset)
+                tableView.moveRow(at: sourceIndexPath, to: destinationIndexPath)
+            } completion: { _ in
+                coordinator.drop(item.dragItem, toRowAt: destinationIndexPath)
+            }
+        }
+
+        private func adjustedMoveOffset(from sourceRow: Int, to destinationRow: Int) -> Int {
+            if sourceRow < destinationRow {
+                return min(destinationRow + 1, displayedExercises.count)
+            }
+
+            return destinationRow
+        }
     }
 }
 
 private final class WorkoutExerciseCell: UITableViewCell {
     private static let maximumSwipeRevealWidth: CGFloat = 180
+    private static let liftedCornerRadius: CGFloat = 20
 
     private var exercise: HomeWorkoutExercise?
     private var onTap: (() -> Void)?
     private var swipeRevealProgress: CGFloat = 0
+    private var isReorderingEnabled = false
+    private var showsDisclosureIndicator = true
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -752,9 +868,21 @@ private final class WorkoutExerciseCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func configure(with exercise: HomeWorkoutExercise, onTap: @escaping () -> Void) {
+    func configure(
+        with exercise: HomeWorkoutExercise,
+        showsDisclosureIndicator: Bool,
+        onTap: @escaping () -> Void
+    ) {
         self.exercise = exercise
+        self.showsDisclosureIndicator = showsDisclosureIndicator
         self.onTap = onTap
+        applyContentConfiguration()
+    }
+
+    func setReorderingEnabled(_ isEnabled: Bool) {
+        guard isReorderingEnabled != isEnabled else { return }
+
+        isReorderingEnabled = isEnabled
         applyContentConfiguration()
     }
 
@@ -763,6 +891,8 @@ private final class WorkoutExerciseCell: UITableViewCell {
         exercise = nil
         onTap = nil
         swipeRevealProgress = 0
+        isReorderingEnabled = false
+        showsDisclosureIndicator = true
         contentConfiguration = nil
     }
 
@@ -793,12 +923,50 @@ private final class WorkoutExerciseCell: UITableViewCell {
                 SimpleGymRow(
                     title: exercise.title,
                     imageName: exercise.imageName,
+                    showsDisclosureIndicator: showsDisclosureIndicator,
                     swipeRevealProgress: swipeRevealProgress
                 )
             }
             .buttonStyle(.plain)
         }
         .margins(.all, 0)
+    }
+
+    func makeLiftedPreview() -> UIDragPreview? {
+        guard let previewView = renderedLiftedPreviewView() else { return nil }
+
+        let parameters = UIDragPreviewParameters()
+        parameters.backgroundColor = .clear
+        parameters.visiblePath = UIBezierPath(
+            roundedRect: previewView.bounds,
+            cornerRadius: Self.liftedCornerRadius
+        )
+
+        return UIDragPreview(view: previewView, parameters: parameters)
+    }
+
+    private func renderedLiftedPreviewView() -> UIView? {
+        guard let exercise else { return nil }
+
+        let previewContent = SimpleGymRow(
+            title: exercise.title,
+            imageName: exercise.imageName,
+            showsDisclosureIndicator: showsDisclosureIndicator,
+            isLifted: true,
+            swipeRevealProgress: 0
+        )
+        .frame(width: bounds.width, height: bounds.height)
+
+        let renderer = ImageRenderer(content: previewContent)
+        let displayScale = traitCollection.displayScale > 0 ? traitCollection.displayScale : 1
+        renderer.scale = displayScale
+
+        guard let image = renderer.uiImage else { return nil }
+
+        let imageView = UIImageView(image: image)
+        imageView.frame = bounds
+        imageView.backgroundColor = .clear
+        return imageView
     }
 }
 

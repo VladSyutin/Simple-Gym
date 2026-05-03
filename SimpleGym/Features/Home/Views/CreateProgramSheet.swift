@@ -111,7 +111,9 @@ struct ProgramEditorContent: View {
                     WorkoutExerciseList(
                         exercises: exercises,
                         swipeActionsProvider: programExerciseSwipeActions(for:),
-                        onSelect: { _ in }
+                        onSelect: { _ in },
+                        onMove: moveExercises,
+                        showsDisclosureIndicator: false
                     )
                     .frame(height: WorkoutExerciseList.height(for: exercises))
                 }
@@ -210,6 +212,10 @@ struct ProgramEditorContent: View {
 
     private func deleteExercise(_ exercise: HomeWorkoutExercise) {
         exercises.removeAll { $0.id == exercise.id }
+    }
+
+    private func moveExercises(from source: IndexSet, to destination: Int) {
+        exercises.move(fromOffsets: source, toOffset: destination)
     }
 }
 

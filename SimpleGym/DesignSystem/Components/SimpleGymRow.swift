@@ -28,6 +28,10 @@ struct SimpleGymRow: View {
         static let reorderInset: CGFloat = 12
         static let disclosureIndicatorSize: CGFloat = 14
         static let reorderHandleSize: CGFloat = 15
+        static let liftedCornerRadius: CGFloat = 20
+        static let liftedShadowRadius: CGFloat = 22
+        static let liftedShadowYOffset: CGFloat = 10
+        static let liftedShadowOpacity: Double = 0.16
     }
 
     static let height: CGFloat = Metrics.height
@@ -87,8 +91,25 @@ struct SimpleGymRow: View {
         .padding(.horizontal, Spacing.small)
         .frame(minHeight: Metrics.height)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(liftedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: Metrics.liftedCornerRadius, style: .continuous))
+        .shadow(
+            color: isLifted ? Color.black.opacity(Metrics.liftedShadowOpacity) : .clear,
+            radius: isLifted ? Metrics.liftedShadowRadius : 0,
+            x: 0,
+            y: isLifted ? Metrics.liftedShadowYOffset : 0
+        )
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private var liftedBackground: some View {
+        if isLifted {
+            Color.white
+        } else {
+            Color.clear
+        }
     }
 }
 
