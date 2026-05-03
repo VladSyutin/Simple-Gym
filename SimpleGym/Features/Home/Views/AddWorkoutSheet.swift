@@ -240,7 +240,8 @@ struct AddWorkoutSheet: View {
     }
 
     private var programsTopContentInset: CGFloat {
-        Metrics.externalSegmentedTopInset + Metrics.externalSegmentedReservedHeight
+        Metrics.externalSegmentedTopInset
+            + Metrics.externalSegmentedReservedHeight
     }
 
     private func programSwipeActions(for program: WorkoutProgramDraft) -> [SimpleGymRowSwipeAction] {

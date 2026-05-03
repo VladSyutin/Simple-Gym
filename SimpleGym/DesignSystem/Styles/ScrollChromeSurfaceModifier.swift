@@ -1,5 +1,9 @@
 import SwiftUI
 
+private enum ScrollChromeMetrics {
+    static let softEdgeHeight: CGFloat = 8
+}
+
 private struct ScrollChromeSurfaceBackground: View {
     var body: some View {
         Rectangle()
@@ -9,32 +13,26 @@ private struct ScrollChromeSurfaceBackground: View {
 
 private struct TranslucentChromeSurfaceBackground: View {
     private enum Metrics {
-        static let fadeExtension: CGFloat = 28
-    }
-
-    private func fadeStopLocation(for chromeHeight: CGFloat) -> CGFloat {
-        let fullHeight = chromeHeight + Metrics.fadeExtension
-        guard fullHeight > 0 else { return 0 }
-        return max(0, min(1, chromeHeight / fullHeight))
+        static let topFadeOpacity: CGFloat = 0.8
     }
 
     var body: some View {
         GeometryReader { proxy in
-            VStack(spacing: 0) {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .frame(height: proxy.size.height)
+            let chromeHeight = proxy.size.height
+            let surfaceHeight = chromeHeight + ScrollChromeMetrics.softEdgeHeight
 
-                LinearGradient(
-                    colors: [
-                        ColorTokens.backgroundPrimary,
-                        ColorTokens.backgroundPrimary.opacity(0),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: Metrics.fadeExtension)
-            }
+            LinearGradient(
+                stops: [
+                    .init(color: ColorTokens.backgroundPrimary.opacity(Metrics.topFadeOpacity), location: 0),
+                    .init(color: ColorTokens.backgroundPrimary.opacity(0.64), location: 0.4),
+                    .init(color: ColorTokens.backgroundPrimary.opacity(0.32), location: 0.78),
+                    .init(color: ColorTokens.backgroundPrimary.opacity(0), location: 1),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: surfaceHeight)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
     }
 }
