@@ -38,6 +38,7 @@ struct ExercisePickerContent: View {
     let sheetTitle: String
     @Binding var showsTopAccessory: Bool
     let reservedTopAccessoryHeight: CGFloat
+    let topAccessory: AnyView?
     let selectionMode: ExercisePickerSelectionMode
     let onSave: ([HomeWorkoutExercise]) -> Void
 
@@ -47,18 +48,24 @@ struct ExercisePickerContent: View {
     @State private var navigationDirection: ExercisePickerNavigationDirection = .forward
     @State private var editorContext: ExerciseEditorContext?
 
+    private enum Metrics {
+        static let topChromeHeight: CGFloat = 78
+    }
+
     init(
         sheetTitle: String,
         initialExercises: [HomeWorkoutExercise] = [],
         initialCategoryID: String? = nil,
         showsTopAccessory: Binding<Bool> = .constant(true),
         reservedTopAccessoryHeight: CGFloat = 0,
+        topAccessory: AnyView? = nil,
         selectionMode: ExercisePickerSelectionMode = .multiple,
         onSave: @escaping ([HomeWorkoutExercise]) -> Void = { _ in }
     ) {
         self.sheetTitle = sheetTitle
         self._showsTopAccessory = showsTopAccessory
         self.reservedTopAccessoryHeight = reservedTopAccessoryHeight
+        self.topAccessory = topAccessory
         self.selectionMode = selectionMode
         self.onSave = onSave
         _categories = State(initialValue: ExerciseCatalog.categories(merging: initialExercises))
@@ -77,10 +84,7 @@ struct ExercisePickerContent: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            grabber
-            toolbar
-
+        ZStack(alignment: .top) {
             ZStack {
                 if let selectedCategory {
                     detailPane(for: selectedCategory)
@@ -92,6 +96,8 @@ struct ExercisePickerContent: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .clipped()
+
+            topChrome
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(ColorTokens.backgroundPrimary)
@@ -142,6 +148,24 @@ struct ExercisePickerContent: View {
             .padding(.top, Spacing.xxSmall)
             .padding(.bottom, 3)
             .accessibilityHidden(true)
+    }
+
+    private var topChrome: some View {
+        VStack(spacing: 0) {
+            grabber
+            toolbar
+
+            if showsTopAccessory {
+                if let topAccessory {
+                    topAccessory
+                } else if reservedTopAccessoryHeight > 0 {
+                    Color.clear
+                        .frame(height: reservedTopAccessoryHeight)
+                        .accessibilityHidden(true)
+                }
+            }
+        }
+        .topScrollChromeSurface()
     }
 
     private var toolbar: some View {
@@ -224,36 +248,36 @@ struct ExercisePickerContent: View {
     }
 
     private var categoryPane: some View {
-        VStack(spacing: 0) {
-            if showsTopAccessory, reservedTopAccessoryHeight > 0 {
+        ScrollView(.vertical, showsIndicators: false) {
+            LazyVStack(spacing: 0) {
                 Color.clear
-                    .frame(height: reservedTopAccessoryHeight)
+                    .frame(height: categoryTopContentInset)
                     .accessibilityHidden(true)
-            }
 
-            ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 0) {
-                    ForEach(categories) { category in
-                        Button {
-                            navigationDirection = .forward
-                            withAnimation(.easeInOut(duration: 0.28)) {
-                                showsTopAccessory = false
-                                selectedCategoryID = category.id
-                            }
-                        } label: {
-                            SimpleGymRow(
-                                title: category.title,
-                                detail: selectionDetail(for: category),
-                                imageName: category.imageName
-                            )
+                ForEach(categories) { category in
+                    Button {
+                        navigationDirection = .forward
+                        withAnimation(.easeInOut(duration: 0.28)) {
+                            showsTopAccessory = false
+                            selectedCategoryID = category.id
                         }
-                        .buttonStyle(.plain)
+                    } label: {
+                        SimpleGymRow(
+                            title: category.title,
+                            detail: selectionDetail(for: category),
+                            imageName: category.imageName
+                        )
                     }
+                    .buttonStyle(.plain)
                 }
             }
-            .scrollIndicators(.hidden)
-            .padding(.bottom, Spacing.xxLarge)
         }
+        .scrollIndicators(.hidden)
+        .padding(.bottom, Spacing.xxLarge)
+    }
+
+    private var categoryTopContentInset: CGFloat {
+        Metrics.topChromeHeight + (showsTopAccessory ? reservedTopAccessoryHeight : 0)
     }
 
     @ViewBuilder
@@ -270,11 +294,13 @@ struct ExercisePickerContent: View {
 
                 Spacer(minLength: 0)
             }
+            .padding(.top, Metrics.topChromeHeight)
             .padding(.bottom, 108)
         } else {
             ExercisePickerExerciseList(
                 exercises: category.exercises.map(ExercisePickerExercise.init(title:)),
                 selectedExerciseTitles: selectedExercisesByCategoryID[category.id] ?? [],
+                topContentInset: Metrics.topChromeHeight,
                 swipeActionsProvider: detailSwipeActions(for:),
                 onSelect: { selectedTitle in
                     withAnimation(.easeInOut(duration: 0.18)) {
@@ -467,6 +493,7 @@ struct ExercisePickerContent: View {
 private struct ExercisePickerExerciseList: UIViewRepresentable {
     let exercises: [ExercisePickerExercise]
     let selectedExerciseTitles: Set<String>
+    var topContentInset: CGFloat = 0
     let swipeActionsProvider: (String) -> [SimpleGymRowSwipeAction]
     let onSelect: (String) -> Void
 
@@ -485,7 +512,7 @@ private struct ExercisePickerExerciseList: UIViewRepresentable {
         tableView.showsHorizontalScrollIndicator = false
         tableView.rowHeight = SimpleGymRow.height
         tableView.estimatedRowHeight = SimpleGymRow.height
-        tableView.contentInset = .zero
+        tableView.contentInset = UIEdgeInsets(top: topContentInset, left: 0, bottom: 0, right: 0)
         tableView.layoutMargins = .zero
         tableView.cellLayoutMarginsFollowReadableWidth = false
 
@@ -499,6 +526,7 @@ private struct ExercisePickerExerciseList: UIViewRepresentable {
 
     func updateUIView(_ tableView: UITableView, context: Context) {
         context.coordinator.parent = self
+        tableView.contentInset.top = topContentInset
         tableView.reloadData()
     }
 }
