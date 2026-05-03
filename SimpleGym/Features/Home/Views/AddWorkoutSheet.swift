@@ -70,24 +70,14 @@ struct AddWorkoutSheet: View {
                         onSave: addCustomWorkout(_:)
                     )
                 case .programs:
-                    VStack(spacing: 0) {
-                        grabber
-                        ZStack {
-                            if let editingProgram {
-                                programEditor(for: editingProgram)
-                                    .transition(programsPaneTransition)
-                            } else {
-                                VStack(spacing: 0) {
-                                    toolbar
-                                    Color.clear
-                                        .frame(height: Metrics.externalSegmentedReservedHeight)
-                                        .accessibilityHidden(true)
-                                    programsContent
-                                }
+                    ZStack(alignment: .top) {
+                        if let editingProgram {
+                            programEditor(for: editingProgram)
                                 .transition(programsPaneTransition)
-                            }
+                        } else {
+                            programsPane
+                                .transition(programsPaneTransition)
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                     }
                 }
             }
@@ -95,12 +85,8 @@ struct AddWorkoutSheet: View {
             if shouldShowSegmentedControl {
                 segmentedControl
                     .padding(.top, Metrics.externalSegmentedTopInset)
-                    .transition(
-                        .asymmetric(
-                            insertion: .move(edge: .leading),
-                            removal: .move(edge: .leading)
-                        )
-                    )
+                    .transition(segmentedControlTransition)
+                    .zIndex(2)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -174,6 +160,20 @@ struct AddWorkoutSheet: View {
             .accessibilityHidden(true)
     }
 
+    private var topChrome: some View {
+        VStack(spacing: 0) {
+            grabber
+            toolbar
+
+            if shouldShowSegmentedControl {
+                Color.clear
+                    .frame(height: Metrics.externalSegmentedReservedHeight)
+                    .accessibilityHidden(true)
+            }
+        }
+        .topScrollChromeSurface()
+    }
+
     private var toolbar: some View {
         ZStack {
             Text("Добавление тренировки")
@@ -207,6 +207,13 @@ struct AddWorkoutSheet: View {
         .frame(height: Metrics.externalSegmentedReservedHeight)
     }
 
+    private var segmentedControlTransition: AnyTransition {
+        .asymmetric(
+            insertion: .move(edge: .leading),
+            removal: .move(edge: .leading)
+        )
+    }
+
     @ViewBuilder
     private var programsContent: some View {
         if programs.isEmpty {
@@ -214,11 +221,26 @@ struct AddWorkoutSheet: View {
         } else {
             ProgramDraftList(
                 programs: programs,
+                topContentInset: programsTopContentInset,
                 swipeActionsProvider: programSwipeActions(for:),
                 onSelect: addProgramWorkout(_:)
             )
             .padding(.bottom, 108)
         }
+    }
+
+    private var programsPane: some View {
+        ZStack(alignment: .top) {
+            programsContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+            topChrome
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var programsTopContentInset: CGFloat {
+        Metrics.externalSegmentedTopInset + Metrics.externalSegmentedReservedHeight
     }
 
     private func programSwipeActions(for program: WorkoutProgramDraft) -> [SimpleGymRowSwipeAction] {
@@ -293,6 +315,7 @@ struct AddWorkoutSheet: View {
 
             Spacer(minLength: 0)
         }
+        .padding(.top, programsTopContentInset)
         .padding(.bottom, 108)
     }
 
@@ -342,6 +365,7 @@ struct AddWorkoutSheet: View {
 
 private struct ProgramDraftList: UIViewRepresentable {
     let programs: [WorkoutProgramDraft]
+    var topContentInset: CGFloat = 0
     let swipeActionsProvider: (WorkoutProgramDraft) -> [SimpleGymRowSwipeAction]
     let onSelect: (WorkoutProgramDraft) -> Void
 
@@ -360,7 +384,7 @@ private struct ProgramDraftList: UIViewRepresentable {
         tableView.showsHorizontalScrollIndicator = false
         tableView.rowHeight = SimpleGymRow.height
         tableView.estimatedRowHeight = SimpleGymRow.height
-        tableView.contentInset = .zero
+        tableView.contentInset = UIEdgeInsets(top: topContentInset, left: 0, bottom: 0, right: 0)
         tableView.layoutMargins = .zero
         tableView.cellLayoutMarginsFollowReadableWidth = false
 
@@ -374,6 +398,7 @@ private struct ProgramDraftList: UIViewRepresentable {
 
     func updateUIView(_ tableView: UITableView, context: Context) {
         context.coordinator.parent = self
+        tableView.contentInset.top = topContentInset
         tableView.reloadData()
     }
 }

@@ -17,6 +17,8 @@
 - Проверять, что визуальный стек не ухудшает читаемость, контраст и скорость взаимодействия.
 - Для Figma-паттерна `Scroll Edge Effect - Hard` на iOS 26+ предпочтительнее использовать системный `scrollEdgeEffectStyle(.hard, for:)` вместе с `Material.bar`, а не имитировать эффект кастомным blur-слоем.
 - Если контент должен просвечивать под верхним glass/material chrome во время скролла, сам `ScrollView` должен физически уходить под этот chrome через overlay/ZStack и верхний content inset; отдельный blur поверх раздельного `VStack` такого эффекта не даст.
+- Для top soft chrome в sheet-потоках лучше держать один persistent segmented control instance в родительском overlay для системной анимации индикатора, а сам chrome расширять прозрачным placeholder-слоем и fade-маской ниже сегмента.
+- Если soft fade должен быть незаметен в покое, material стоит ограничивать реальной высотой chrome, а продолжение ниже сегмента делать через `backgroundPrimary -> transparent`, иначе до скролла появляется лишний tint.
 - Для nested creation flow внутри sheet-based pickers предпочтительнее открывать второй нативный sheet поверх первого и возвращать созданную сущность обратно через state/closure, чем заменять базовый flow вручную.
 - Для reminders-like swipe-взаимодействий в списках, где SwiftUI не воспроизводит reveal-state корректно, предпочтительнее UIKit-backed `UITableView`/`UICollectionView` cell с системными swipe actions и отдельным background view, который остаётся на месте, пока content view уезжает.
 - Для системного `.segmented` в sheet flows важно сохранять один persistent instance control-а; если segmented пересоздаётся в разных subtree, нативная liquid-glass анимация sliding indicator может пропасть.
