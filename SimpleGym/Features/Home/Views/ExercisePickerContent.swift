@@ -277,7 +277,8 @@ struct ExercisePickerContent: View {
     }
 
     private var categoryTopContentInset: CGFloat {
-        Metrics.topChromeHeight + (showsTopAccessory ? reservedTopAccessoryHeight : 0)
+        Metrics.topChromeHeight
+            + (showsTopAccessory ? reservedTopAccessoryHeight : 0)
     }
 
     @ViewBuilder
