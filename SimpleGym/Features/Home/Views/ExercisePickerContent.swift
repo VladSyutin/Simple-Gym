@@ -41,6 +41,7 @@ struct ExercisePickerContent: View {
     let topAccessory: AnyView?
     let selectionMode: ExercisePickerSelectionMode
     let onSave: ([HomeWorkoutExercise]) -> Void
+    private let initialSelectedExercisesByCategoryID: [String: Set<String>]
 
     @State private var categories: [ExercisePickerCategory]
     @State private var selectedCategoryID: String?
@@ -68,19 +69,19 @@ struct ExercisePickerContent: View {
         self.topAccessory = topAccessory
         self.selectionMode = selectionMode
         self.onSave = onSave
+        let initialSelections = ExerciseCatalog.initialSelections(from: initialExercises)
+        self.initialSelectedExercisesByCategoryID = initialSelections
         _categories = State(initialValue: ExerciseCatalog.categories(merging: initialExercises))
         _selectedCategoryID = State(initialValue: initialCategoryID)
-        _selectedExercisesByCategoryID = State(
-            initialValue: ExerciseCatalog.initialSelections(from: initialExercises)
-        )
+        _selectedExercisesByCategoryID = State(initialValue: initialSelections)
     }
 
     private var selectedCategory: ExercisePickerCategory? {
         categories.first { $0.id == selectedCategoryID }
     }
 
-    private var hasSelections: Bool {
-        selectedExercisesByCategoryID.values.contains { !$0.isEmpty }
+    private var hasPendingSelectionChanges: Bool {
+        selectedExercisesByCategoryID != initialSelectedExercisesByCategoryID
     }
 
     var body: some View {
@@ -231,7 +232,7 @@ struct ExercisePickerContent: View {
 
     private var trailingToolbarButton: some View {
         Group {
-            if selectedCategory == nil, hasSelections {
+            if selectedCategory == nil, hasPendingSelectionChanges {
                 LiquidGlassSymbolButton(
                     systemImage: "checkmark",
                     accessibilityLabel: "Готово",
