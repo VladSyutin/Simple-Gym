@@ -183,13 +183,13 @@ enum ExerciseCatalog {
         _ exercises: [HomeWorkoutExercise],
         preservingExistingStateFrom existingExercises: [HomeWorkoutExercise]
     ) -> [HomeWorkoutExercise] {
-        sortExercises(exercises.map { exercise in
-            if let existing = existingExercises.first(where: { $0.title == exercise.title && $0.kind == exercise.kind }) {
-                return existing
-            }
-
-            return exercise
-        })
+        let retained = existingExercises.filter { existing in
+            exercises.contains { $0.title == existing.title && $0.kind == existing.kind }
+        }
+        let added = exercises.filter { exercise in
+            !existingExercises.contains { $0.title == exercise.title && $0.kind == exercise.kind }
+        }
+        return retained + sortExercises(added)
     }
 
     static func sortExercises(_ exercises: [HomeWorkoutExercise]) -> [HomeWorkoutExercise] {
