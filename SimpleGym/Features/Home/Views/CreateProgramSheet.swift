@@ -11,6 +11,11 @@ struct ProgramEditorContent: View {
     @State private var exercises: [HomeWorkoutExercise]
     @State private var isExerciseSheetPresented = false
     @FocusState private var isNameFieldFocused: Bool
+    @Environment(\.displayScale) private var displayScale
+
+    private var separatorHeight: CGFloat {
+        1 / max(displayScale, 1)
+    }
 
     init(
         titleText: String = "Создание программы",
@@ -128,7 +133,8 @@ struct ProgramEditorContent: View {
         VStack(spacing: 0) {
             Rectangle()
                 .fill(ColorTokens.separatorVibrant)
-                .frame(height: 1)
+                .frame(height: separatorHeight)
+                .padding(.horizontal, Spacing.small)
 
             HStack(spacing: 0) {
                 TextField("", text: $programTitle)
