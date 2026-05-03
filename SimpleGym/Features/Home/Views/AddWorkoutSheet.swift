@@ -408,7 +408,7 @@ private struct ProgramDraftList: UIViewRepresentable {
     func updateUIView(_ tableView: UITableView, context: Context) {
         context.coordinator.parent = self
         tableView.contentInset.top = topContentInset
-        tableView.reloadData()
+        context.coordinator.syncDisplayedPrograms(with: programs, in: tableView)
     }
 }
 
@@ -417,13 +417,40 @@ extension ProgramDraftList {
         static let reuseIdentifier = "ProgramDraftCell"
 
         var parent: ProgramDraftList
+        private var displayedPrograms: [WorkoutProgramDraft]
 
         init(parent: ProgramDraftList) {
             self.parent = parent
+            self.displayedPrograms = parent.programs
+        }
+
+        func syncDisplayedPrograms(with programs: [WorkoutProgramDraft], in tableView: UITableView) {
+            let oldIDs = displayedPrograms.map(\.id)
+            let newIDs = programs.map(\.id)
+
+            guard oldIDs != newIDs else {
+                displayedPrograms = programs
+                tableView.reloadData()
+                return
+            }
+
+            if
+                oldIDs.count == newIDs.count + 1,
+                let deletedRow = oldIDs.firstIndex(where: { !newIDs.contains($0) })
+            {
+                displayedPrograms = programs
+                tableView.deleteRows(
+                    at: [IndexPath(row: deletedRow, section: 0)],
+                    with: .automatic
+                )
+            } else {
+                displayedPrograms = programs
+                tableView.reloadData()
+            }
         }
 
         func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-            parent.programs.count
+            displayedPrograms.count
         }
 
         func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -434,41 +461,54 @@ extension ProgramDraftList {
                 return UITableViewCell()
             }
 
-            cell.configure(with: parent.programs[indexPath.row])
+            cell.configure(with: displayedPrograms[indexPath.row])
             return cell
         }
 
         func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-            parent.onSelect(parent.programs[indexPath.row])
+            parent.onSelect(displayedPrograms[indexPath.row])
             tableView.deselectRow(at: indexPath, animated: true)
+        }
+
+        func tableView(_ tableView: UITableView, willBeginEditingRowAt indexPath: IndexPath) {
+            (tableView.cellForRow(at: indexPath) as? ProgramDraftCell)?
+                .setSwipeBackgroundVisible(true, animated: true)
+        }
+
+        func tableView(_ tableView: UITableView, didEndEditingRowAt indexPath: IndexPath?) {
+            if let indexPath {
+                (tableView.cellForRow(at: indexPath) as? ProgramDraftCell)?
+                    .setSwipeBackgroundVisible(false, animated: true)
+            } else {
+                tableView.visibleCells
+                    .compactMap { $0 as? ProgramDraftCell }
+                    .forEach { $0.setSwipeBackgroundVisible(false, animated: true) }
+            }
         }
 
         func tableView(
             _ tableView: UITableView,
             trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
         ) -> UISwipeActionsConfiguration? {
-            let program = parent.programs[indexPath.row]
-            let actions = parent.swipeActionsProvider(program).map { swipeAction in
-                let style: UIContextualAction.Style = swipeAction.role == .destructive ? .destructive : .normal
-                let action = UIContextualAction(style: style, title: nil) { _, _, completion in
-                    swipeAction.action()
-                    completion(true)
-                }
+            let program = displayedPrograms[indexPath.row]
 
-                action.backgroundColor = .clear
-                action.image = SimpleGymSwipeActionImageRenderer.make(for: swipeAction)
-                return action
+            return SimpleGymSwipeActionsConfiguration.make(
+                actions: parent.swipeActionsProvider(program)
+            ) { swipeAction, completion in
+                swipeAction.action()
+                completion(true)
             }
-
-            let configuration = UISwipeActionsConfiguration(actions: actions)
-            configuration.performsFirstActionWithFullSwipe = false
-            return configuration
         }
     }
 }
 
 private final class ProgramDraftCell: UITableViewCell {
+    private static let maximumSwipeRevealWidth: CGFloat = 180
+    private static let swipeBackgroundCornerRadius: CGFloat = 20
+
     private var program: WorkoutProgramDraft?
+    private var swipeRevealProgress: CGFloat = 0
+    private var isSwipeBackgroundForcedVisible = false
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -495,6 +535,62 @@ private final class ProgramDraftCell: UITableViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         program = nil
+        swipeRevealProgress = 0
+        isSwipeBackgroundForcedVisible = false
+        applySimpleGymSwipeBackground(
+            progress: swipeRevealProgress,
+            cornerRadius: Self.swipeBackgroundCornerRadius
+        )
+        contentConfiguration = nil
+    }
+
+    func setSwipeBackgroundVisible(_ isVisible: Bool, animated: Bool) {
+        let progress: CGFloat = isVisible ? 1 : 0
+        guard abs(progress - swipeRevealProgress) > 0.001 else { return }
+
+        isSwipeBackgroundForcedVisible = isVisible
+
+        let updateBackground = {
+            self.swipeRevealProgress = progress
+            self.applySimpleGymSwipeBackground(
+                progress: progress,
+                cornerRadius: Self.swipeBackgroundCornerRadius
+            )
+            self.applyContentConfiguration()
+        }
+
+        if animated {
+            UIView.transition(
+                with: contentView,
+                duration: 0.18,
+                options: [.transitionCrossDissolve, .allowUserInteraction],
+                animations: updateBackground
+            )
+        } else {
+            updateBackground()
+        }
+    }
+
+    override func setEditing(_ editing: Bool, animated: Bool) {
+        super.setEditing(editing, animated: animated)
+        setSwipeBackgroundVisible(editing, animated: animated)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        let progress = isSwipeBackgroundForcedVisible
+            ? 1
+            : simpleGymSwipeRevealProgress(maximumRevealWidth: Self.maximumSwipeRevealWidth)
+
+        guard abs(progress - swipeRevealProgress) > 0.001 else { return }
+
+        swipeRevealProgress = progress
+        applySimpleGymSwipeBackground(
+            progress: swipeRevealProgress,
+            cornerRadius: Self.swipeBackgroundCornerRadius
+        )
+        applyContentConfiguration()
     }
 
     private func applyContentConfiguration() {
@@ -508,7 +604,8 @@ private final class ProgramDraftCell: UITableViewCell {
                 title: program.title,
                 detail: exerciseCountText,
                 imageName: nil,
-                showsDisclosureIndicator: false
+                showsDisclosureIndicator: false,
+                swipeRevealProgress: swipeRevealProgress
             )
             .background(Color.clear)
         }

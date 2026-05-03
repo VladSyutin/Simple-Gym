@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SimpleGymRowSwipeAction: Identifiable {
     let id = UUID()
-    let title: LocalizedStringKey
+    let title: String
     let systemImage: String
     let tint: Color
     var role: ButtonRole? = nil
@@ -35,6 +35,10 @@ struct SimpleGymRow: View {
     }
 
     static let height: CGFloat = Metrics.height
+
+    private var resolvedSwipeRevealProgress: CGFloat {
+        max(0, min(1, swipeRevealProgress))
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -107,6 +111,9 @@ struct SimpleGymRow: View {
     private var liftedBackground: some View {
         if isLifted {
             Color.white
+        } else if resolvedSwipeRevealProgress > 0 {
+            ColorTokens.backgroundSecondary
+                .opacity(resolvedSwipeRevealProgress)
         } else {
             Color.clear
         }
