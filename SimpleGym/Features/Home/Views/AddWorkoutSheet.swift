@@ -30,7 +30,7 @@ struct WorkoutProgramDraft: Identifiable {
     init(id: UUID = UUID(), title: String, exercises: [HomeWorkoutExercise]) {
         self.id = id
         self.title = title
-        self.exercises = exercises
+        self.exercises = ExerciseCatalog.sortExercises(exercises)
     }
 }
 
@@ -134,6 +134,7 @@ struct AddWorkoutSheet: View {
                             exercises: exercises
                         )
                     )
+                    programs = sortedPrograms(programs)
                 }
             )
                 .presentationDetents([.large])
@@ -220,7 +221,7 @@ struct AddWorkoutSheet: View {
             programsEmptyState
         } else {
             ProgramDraftList(
-                programs: programs,
+                programs: sortedPrograms(programs),
                 topContentInset: programsTopContentInset,
                 swipeActionsProvider: programSwipeActions(for:),
                 onSelect: addProgramWorkout(_:)
@@ -280,7 +281,7 @@ struct AddWorkoutSheet: View {
             HomeWorkoutSession(
                 title: "Произвольная тренировка",
                 kind: .freeform,
-                exercises: exercises
+                exercises: ExerciseCatalog.sortExercises(exercises)
             )
         )
     }
@@ -290,7 +291,7 @@ struct AddWorkoutSheet: View {
             HomeWorkoutSession(
                 title: program.title,
                 kind: .program,
-                exercises: program.exercises
+                exercises: ExerciseCatalog.sortExercises(program.exercises)
             )
         )
         dismiss()
@@ -354,12 +355,19 @@ struct AddWorkoutSheet: View {
                     title: title,
                     exercises: exercises
                 )
+                programs = sortedPrograms(programs)
                 programsNavigationDirection = .backward
                 withAnimation(.easeInOut(duration: 0.28)) {
                     editingProgram = nil
                 }
             }
         )
+    }
+
+    private func sortedPrograms(_ programs: [WorkoutProgramDraft]) -> [WorkoutProgramDraft] {
+        programs.sorted { lhs, rhs in
+            lhs.title.localizedCompare(rhs.title) == .orderedAscending
+        }
     }
 
 }

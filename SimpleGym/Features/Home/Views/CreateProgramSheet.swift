@@ -52,7 +52,7 @@ struct ProgramEditorContent: View {
             AddExerciseSheet(
                 initialExercises: exercises,
                 onSave: { updatedExercises in
-                    exercises = updatedExercises
+                    exercises = ExerciseCatalog.sortExercises(updatedExercises)
                 }
             )
             .presentationDetents([.large])
@@ -87,7 +87,7 @@ struct ProgramEditorContent: View {
                         accessibilityLabel: "Сохранить программу",
                         variant: .tinted
                     ) {
-                        onSave(exercises, trimmedTitle)
+                        onSave(ExerciseCatalog.sortExercises(exercises), trimmedTitle)
                     }
                 } else {
                     Color.clear

@@ -440,7 +440,7 @@ struct ExercisePickerContent: View {
             exercises.append(normalizedTitle)
         }
 
-        categories[categoryIndex].exercises = exercises
+        categories[categoryIndex].exercises = ExerciseCatalog.sortTitles(exercises)
 
         var selections = selectedExercisesByCategoryID[categoryID] ?? []
 
@@ -477,7 +477,7 @@ struct ExercisePickerContent: View {
             guard !selections.isEmpty else { return }
 
             let orderedTitles = category.exercises.filter(selections.contains)
-            let customTitles = selections.subtracting(orderedTitles).sorted()
+            let customTitles = ExerciseCatalog.sortTitles(Array(selections.subtracting(orderedTitles)))
 
             let exercises = (orderedTitles + customTitles).map { title in
                 ExerciseCatalog.makeExercise(

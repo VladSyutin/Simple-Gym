@@ -145,7 +145,11 @@ enum ExerciseCatalog {
             }
         }
 
-        return categories
+        return categories.map { category in
+            var category = category
+            category.exercises = sortTitles(category.exercises)
+            return category
+        }
     }
 
     static func categoryTitle(for imageName: String) -> String? {
@@ -179,13 +183,29 @@ enum ExerciseCatalog {
         _ exercises: [HomeWorkoutExercise],
         preservingExistingStateFrom existingExercises: [HomeWorkoutExercise]
     ) -> [HomeWorkoutExercise] {
-        exercises.map { exercise in
+        sortExercises(exercises.map { exercise in
             if let existing = existingExercises.first(where: { $0.title == exercise.title && $0.kind == exercise.kind }) {
                 return existing
             }
 
             return exercise
+        })
+    }
+
+    static func sortExercises(_ exercises: [HomeWorkoutExercise]) -> [HomeWorkoutExercise] {
+        exercises.sorted { lhs, rhs in
+            compareTitles(lhs.title, rhs.title) == .orderedAscending
         }
+    }
+
+    static func sortTitles(_ titles: [String]) -> [String] {
+        titles.sorted { lhs, rhs in
+            compareTitles(lhs, rhs) == .orderedAscending
+        }
+    }
+
+    private static func compareTitles(_ lhs: String, _ rhs: String) -> ComparisonResult {
+        lhs.localizedCompare(rhs)
     }
 
     private static let baseCategories: [ExercisePickerCategory] = [
